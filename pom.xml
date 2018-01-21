@@ -67,7 +67,7 @@
 				<groupId>org.apache.sling</groupId>
 				<artifactId>maven-sling-plugin</artifactId>
 				<configuration>
-					<slingUrl>http://localhost:8080/libs/sling/install</slingUrl>
+					<slingUrl>http://localhost:${sling.port}/libs/sling/install</slingUrl>
 					<!-- Alternatively: <slingUrl>http://localhost:8080</slingUrl> <slingUrlSuffix>/libs/sling/install</slingUrlSuffix> -->
 					<usePut>true</usePut>
 					<user>admin</user>
@@ -183,5 +183,6 @@
 	</profiles>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sling.port>8000</sling.port>
 	</properties>
 </project>
