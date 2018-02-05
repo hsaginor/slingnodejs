@@ -18,6 +18,7 @@
  */
 package org.apache.sling.scripting.nodejs.impl.webconsole;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -42,23 +43,23 @@ import com.eclipsesource.v8.Releasable;
 import com.eclipsesource.v8.V8Object;
 
 @SuppressWarnings("serial")
-@Component(name = "NodeJS Version Plugin", immediate = true, service = Servlet.class, 
+@Component(name = "NodeJS Files Plugin", immediate = true, service = Servlet.class, 
 		property = {
-				WebConsoleConstants.PLUGIN_LABEL + "=" + NodeJSVersionPlugin.PLUGIN_LABEL,
-				WebConsoleConstants.PLUGIN_TITLE + "=" + NodeJSVersionPlugin.PLUGIN_TITLE,
-				WebConsoleConstants.PLUGIN_CATEGORY + "=" + NodeJSVersionPlugin.PLUGIN_CATEGORY
+				WebConsoleConstants.PLUGIN_LABEL + "=" + NodeJSFilesPlugin.PLUGIN_LABEL,
+				WebConsoleConstants.PLUGIN_TITLE + "=" + NodeJSFilesPlugin.PLUGIN_TITLE,
+				WebConsoleConstants.PLUGIN_CATEGORY + "=" + NodeJSFilesPlugin.PLUGIN_CATEGORY
 		})
-public class NodeJSVersionPlugin extends AbstractWebConsolePlugin {
+public class NodeJSFilesPlugin extends AbstractWebConsolePlugin {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -372063988540618625L;
 
-	private static final Logger log = LoggerFactory.getLogger( NodeJSVersionPlugin.class );
+	private static final Logger log = LoggerFactory.getLogger( NodeJSFilesPlugin.class );
 	
-	public static final String PLUGIN_LABEL = "nodejsversion";
-	public static final String PLUGIN_TITLE = "NodeJS Scripting Version";
+	public static final String PLUGIN_LABEL = "nodejsfiles";
+	public static final String PLUGIN_TITLE = "NodeJS Scripting Files";
 	public static final String PLUGIN_CATEGORY = "Sling NodeJS";
 
 	@Reference(service=ScriptEngineFactory.class, target="(component.name=NodeJS Scripting Engine Factory)")
@@ -82,57 +83,14 @@ public class NodeJSVersionPlugin extends AbstractWebConsolePlugin {
 	@Override
 	protected void renderContent(final HttpServletRequest request, final HttpServletResponse response)
 			throws ServletException, IOException {
-		NodeJSTask<Object> task = new NodeJSTask<Object>() {
-
-			private NodeJS nodeJS;
-			
-			@Override
-			public Object call() throws Exception {
-				if(nodeJS != null) {
-					getNodeVersion(nodeJS, response.getWriter());
-				}
-				return null;
-			}
-
-			@Override
-			public void setNode(NodeJS node) {
-				nodeJS = node;
-			}
-			
-		};
+		V8ScriptEngineFactory v8EngineFactory = (V8ScriptEngineFactory) scriptFactory;
+		File scriptsFolder = v8EngineFactory.getScriptLoader().getScriptsFolder();
 		
-		try {
-			if(scriptFactory!=null) {
-				((V8ScriptEngineFactory) scriptFactory).getScriptExecutionPool().exec(task);
-			}
-		} catch (ScriptException e) {
-			log.error("Unable to process request.", e);
-			throw new ServletException(e);
-		}
+		String scriptsPath = scriptsFolder.getAbsolutePath();
+		PrintWriter writer = response.getWriter();
+		
+		writer.println("NodeJS Scripts Path: " + scriptsPath + "<br/>");
 		
 	}
-	
-	public void getNodeVersion(NodeJS node, PrintWriter writer) {
-        V8Object process = null;
-        V8Object versions = null;
-        try {
-            process = node.getRuntime().getObject("process");
-            versions = process.getObject("versions");
-            
-            for(String key : versions.getKeys()) {
-            		writer.println(key + " = " + versions.getString(key) + "<br/>");
-            }
-            // nodeVersion = versions.getString("node");
-        } finally {
-            safeRelease(process);
-            safeRelease(versions);
-        }
-    }
-	
-	private void safeRelease(final Releasable releasable) {
-        if (releasable != null) {
-            releasable.release();
-        }
-    }
 
 }

@@ -63,6 +63,16 @@ public class ScriptLoader {
 		this.changeListener = changeListener;
 	}
 	
+	void updateScript(Resource scriptResource) throws ScriptException {
+		lockToRead(scriptResource);
+		
+		try {
+			loadScriptFile(scriptResource);
+		} finally {
+			unlockToRead(scriptResource);
+		}
+	}
+	
 	File loadScriptFile(Resource scriptResource) throws ScriptException {
 		
 		File script = null;
@@ -85,6 +95,10 @@ public class ScriptLoader {
 		}
 		
 		return script;
+	}
+	
+	public File getScriptsFolder() {
+		return this.scriptsRootDir;
 	}
 	
 	private void makeNewFile(Resource scriptResource, File script) throws ScriptException {
