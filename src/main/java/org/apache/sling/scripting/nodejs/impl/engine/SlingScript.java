@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.jcr.Node;
+import javax.jcr.Session;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptException;
@@ -30,6 +31,7 @@ import javax.script.ScriptException;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
@@ -178,12 +180,15 @@ public class SlingScript implements Releasable {
         SlingHttpServletResponse response = (SlingHttpServletResponse) bindings.get(SlingBindings.RESPONSE);
         SlingHttpServletRequest request = scriptHelper.getRequest();
 		Resource resource = request.getResource();
+		ResourceResolver resolver = resource.getResourceResolver();
+		Session jcrSession = resolver.adaptTo( Session.class );
 		
 		addObject(v8, "sling", scriptHelper);
 		addObject(v8, "request", request);
 		addObject(v8, "response", response);
 		addObject(v8, "resource", resource);
-		addObject(v8, "resolver", resource.getResourceResolver());
+		addObject(v8, "resolver", resolver);
+		addObject(v8, "jcrSession", jcrSession);
 		addObject(v8, "node", resource.adaptTo(Node.class));
 		addObject(v8, "properties", resource.adaptTo(ValueMap.class));
 	}
