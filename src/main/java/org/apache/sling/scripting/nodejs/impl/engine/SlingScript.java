@@ -183,10 +183,10 @@ public class SlingScript implements Releasable {
 		ResourceResolver resolver = resource.getResourceResolver();
 		Session jcrSession = resolver.adaptTo( Session.class );
 		
-		addObject(v8, "sling", scriptHelper);
-		addObject(v8, "request", request);
-		addObject(v8, "response", response);
-		addObject(v8, "resource", resource);
+		addObject(v8, SlingBindings.SLING, scriptHelper);
+		addObject(v8, SlingBindings.REQUEST, request);
+		addObject(v8, SlingBindings.RESPONSE, response);
+		addObject(v8, SlingBindings.RESOURCE, resource);
 		addObject(v8, "resolver", resolver);
 		addObject(v8, "jcrSession", jcrSession);
 		addObject(v8, "node", resource.adaptTo(Node.class));
