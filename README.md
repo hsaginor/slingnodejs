@@ -26,6 +26,59 @@ A running Apache Sling or Adobe AEM server.
 
 The above command will install the project OSGi bundle to AEM Author instance on default port 4502. Without sling.port parameter the build will try to install it on the default Sling port 8000. 
 
+## Verify Installation
 
+After installing the OSGi bundles go to Felix Console and navigate to OSGi -> Bundles. Verify that org.apache.sling.scripting.nodejs bundles is active.
 
+You should also see a new menu item in Felix Console named Sling NodeJS. Navigate to Sling NodeJS -> Sling NodeJS Version. Verify node version. If you installed J2V8 bundle from this project (Installation Instruction above) node version should be 7.4.0.
+   
+## Server Side Rendering Objects
+
+The following objects are available to scripts for server side rendering.
+
+* sling - global sling variable as defined by [SlingScriptHelper](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/scripting/SlingScriptHelper.html) interface.
+* request - current request object defined by [SlingHttpServletRequest](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/SlingHttpServletRequest.html) interface. 
+* response - current request object defined by [SlingHttpServletResponse](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/SlingHttpServletResponse.html) interface. 
+* resolver - current ResourceResolver. This is the same object as returned by request.getResourceResolver() method.  
+* resource - current resource. This is the same object as returned by request.getResource() method.
+* properties - current resource properties or the [ValueMap](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/resource/ValueMap.html) for the current resource.
+* jcrSession - current JCR session.
+* node - current JCR node.
+* log - server side log object.
+
+## Simple Script Example
+
+Bellow is a simple script that demonstrates how some of the server side objects can be used to render Sling content.
+
+```javascript
+"use strict";
+
+class ReadresourceTest {
+	render() {
+        var myPath = resource.getPath();
+        var title = properties.get("title", "Read Resource Test");
+        var n = properties.get("number", 15);
+        log.info("Displaying path {}!", myPath);
+		var text = "<html><head><title>Read Resource.</title></head><body><h1>" 
+        			+ title 
+                    + "</h1>Displaying Resource: " 
+                    + myPath + "<br/>" 
+                    + "Number: " + n
+                    + "</body></html>";
+        log.info(text);
+
+        return text;
+    }
+}
+
+module.exports = new ReadresourceTest();
+```
+
+To test this do the following:
+1. Create a file in Sling (or AEM) /apps/nodetest/components/readresourceTest/readresourceTest.jsx
+2. Copy/paste the code above into this file and save.
+3. Create a JCR node somewhere in the repository and set it's sling:resourceType property to nodetest/components/readresourceTest.
+4. Try to access the path you just created with .html extension on your Sling instance in a browser.
+5. Add "title" property of type String and "number" property of type Long.
+6. Change these properties and refresh the browser several times to see how rendered page changes.    
 
