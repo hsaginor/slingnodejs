@@ -54,20 +54,45 @@ public class ScriptLoader {
     
 	private File scriptsRootDir;
 	private ScriptChangeListener changeListener;
+	private NodeBuilder builder;
+	private volatile boolean build = false; 
 	
 	ScriptLoader(File scriptsRootDir) {
 		this.scriptsRootDir = scriptsRootDir;
+		
+		builder = new NodeBuilder();
+		builder.executeInstall(scriptsRootDir);
+		builder.executeBuild(scriptsRootDir);
 	}
 	
 	void setChangeListener(ScriptChangeListener changeListener) {
 		this.changeListener = changeListener;
 	}
 	
+	void updateConfig(Resource scriptResource) throws ScriptException {
+		lockToRead(scriptResource);
+		
+		try {
+			File file = mapResourceToFile(scriptResource);
+			String name = file.getName();
+			makeNewFile(scriptResource, file, false, file.exists());
+			
+			if("package.json".equals(name)) {
+				builder.executeInstall(file.getParentFile());
+			}
+			build = true;
+		} finally {
+			unlockToRead(scriptResource);
+		}
+	}
+	
 	void updateScript(Resource scriptResource) throws ScriptException {
 		lockToRead(scriptResource);
 		
 		try {
-			loadScriptFile(scriptResource);
+			File file = mapResourceToSrcScriptFile(scriptResource);
+			makeNewFile(scriptResource, file, true, file.exists());
+			build = true;
 		} finally {
 			unlockToRead(scriptResource);
 		}
@@ -79,15 +104,23 @@ public class ScriptLoader {
 		
 		try {
 		
-			script = mapScriptResourceToFile(scriptResource);
+			script = mapResourceToSrcScriptFile(scriptResource);
 					
 			if(!script.exists()) {
-				makeNewFile(scriptResource, script);
+				makeNewFile(scriptResource, script, true);
+				build = true;
 			} else if(isScriptFileOutOfDate(scriptResource, script)) { 
 				log.debug("Deleting outdated file {}", script.getAbsolutePath());
-				makeNewFile(scriptResource, script, true);
+				makeNewFile(scriptResource, script, true, true);
+				build = true;
 			}
 			
+			if(build) {
+				builder.executeBuild(this.scriptsRootDir);
+				build = false;
+			}
+			
+			script = mapResourceToCompiledScriptFile(scriptResource);
 			log.debug("Loaded script file {}", script.getAbsolutePath());
 		
 		} finally {
@@ -101,11 +134,11 @@ public class ScriptLoader {
 		return this.scriptsRootDir;
 	}
 	
-	private void makeNewFile(Resource scriptResource, File script) throws ScriptException {
-		makeNewFile(scriptResource, script, false);
+	private void makeNewFile(Resource scriptResource, File file, boolean scriptChange) throws ScriptException {
+		makeNewFile(scriptResource, file, scriptChange, false);
 	}
 	
-	private void makeNewFile(Resource scriptResource, File scriptFile, boolean deleteCurrent) throws ScriptException {
+	private void makeNewFile(Resource scriptResource, File file, boolean scriptChange, boolean deleteCurrent) throws ScriptException {
 		
 		synchronized(this) {
 			unlockToRead(scriptResource);
@@ -113,20 +146,25 @@ public class ScriptLoader {
 		}
 		
 		try {
-			String filePath = scriptFile.getAbsolutePath();
+			String filePath = file.getAbsolutePath();
 			
 			if(deleteCurrent) {
-				scriptFile.delete();
 				
-				if(changeListener != null) {
-					changeListener.onChange(filePath);
+				if(scriptChange) {
+					File compiledFile = mapResourceToCompiledScriptFile(scriptResource);
+					if(changeListener != null)  {
+						changeListener.onChange(compiledFile.getAbsolutePath());
+					}
+					compiledFile.delete();
 				}
+				
+				file.delete();
 			}
 			
 			log.debug("Creating file {}", filePath);
-			scriptFile.getParentFile().mkdirs();
-			scriptFile.createNewFile();
-			writeScriptFile(scriptResource, scriptFile);
+			file.getParentFile().mkdirs();
+			file.createNewFile();
+			writeFile(scriptResource, file);
 			lockToRead(scriptResource);
 			
 		} catch (IOException e) {
@@ -157,12 +195,22 @@ public class ScriptLoader {
 		getFileLock(scriptResource.getPath()).writeLock().unlock();
 	}
 	
-	private File mapScriptResourceToFile(Resource scriptResource) {
+	private File mapResourceToFile(Resource scriptResource) {
 		String resourcePath = scriptResource.getPath().substring(1);
 		return new File(scriptsRootDir, resourcePath);
 	}
 	
-	private void writeScriptFile(Resource scriptResource, File scriptFile) throws IOException {
+	private File mapResourceToCompiledScriptFile(Resource scriptResource) {
+		String resourcePath = scriptResource.getPath();
+		return new File(scriptsRootDir, "out"+resourcePath.replace(".jsx", ".js"));
+	}
+	
+	private File mapResourceToSrcScriptFile(Resource scriptResource) {
+		String resourcePath = scriptResource.getPath();
+		return new File(scriptsRootDir, "src"+resourcePath);
+	}
+	
+	private void writeFile(Resource scriptResource, File scriptFile) throws IOException {
 		InputStream in = scriptResource.getChild("jcr:content").adaptTo(InputStream.class);
 		OutputStream out = new FileOutputStream(scriptFile);
 		

@@ -43,11 +43,17 @@ import com.eclipsesource.v8.NodeJS;
 import com.eclipsesource.v8.Releasable;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.V8Value;
 
 public class SlingScript implements Releasable {
-
 	private static final Logger log = LoggerFactory.getLogger( SlingScript.class );
-			
+	
+	/**
+	 * Name of a default method that will be called on JavaScript script object to render content on the server.<br/>
+	 * This may become a configuration option in the future.
+	 */
+	public static final String DEFAULT_SERVER_METHOD = "renderServerResponse";
+	
 	private ScriptContext context;
 	private ScriptLoader loader;
 	private List<Releasable> scriptableObjects = new ArrayList<Releasable>(); 
@@ -81,7 +87,6 @@ public class SlingScript implements Releasable {
         scriptHelper = (SlingScriptHelper) bindings.get("sling");
         response = (SlingHttpServletResponse) bindings.get(SlingBindings.RESPONSE);
         scriptResource = scriptHelper.getScript().getScriptResource();
-        // scriptFile = loader.loadScriptFile(scriptResource);
 	}
 	
 	/**
@@ -140,8 +145,13 @@ public class SlingScript implements Releasable {
         		log.debug("eval script {} for resource {}", new Object[] {scriptResource.getPath(), scriptHelper.getRequest().getResource().getPath()} );
         		File scriptFile = loader.loadScriptFile(scriptResource);
         		v8script = (V8Object) nodeJS.require(scriptFile);
-			String output = v8script.executeStringFunction("render", null);
-			response.getWriter().write(output);
+			// String output = v8script.executeStringFunction("render", null);
+        		Object output = v8script.executeFunction(DEFAULT_SERVER_METHOD, null);
+        		log.debug("Script return object of type {}", output.getClass());
+        		//if(output instanceof V8Object) {
+        		//	inspect((V8Object) output);
+        		//}
+			response.getWriter().write(output.toString());
 			response.getWriter().flush();
         } catch(Exception e) {
         		log.error("Unable to execure script.", e);
@@ -196,5 +206,19 @@ public class SlingScript implements Releasable {
 	private void addObject(V8 v8, String name, Object object) {
 		V8ObjectWrapper wrapper = new V8ObjectWrapper(v8, object, name);
 		scriptableObjects.add(wrapper);
+	}
+	
+	private void inspect(V8Object obj) {
+		log.debug("Script return V8Object:");
+		for(String k : obj.getKeys()) {
+			// int type = obj.getType(k);
+			log.debug("		key: {}", new Object[]{k});
+			try {
+				log.debug("			type: {}", new Object[]{obj.getType(k)});
+				if(V8Value.STRING == obj.getType(k)) {
+					log.debug("			value: {}", new Object[]{obj.getString(k)});
+				}
+			} catch(Exception e) {}
+		}
 	}
 }

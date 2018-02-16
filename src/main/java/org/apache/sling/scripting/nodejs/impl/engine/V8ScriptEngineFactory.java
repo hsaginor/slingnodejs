@@ -74,8 +74,12 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     
     public final static String EXTENSION = "jsx";
     
+    final static String SCRIPTS_SRC_DIR = "src";
+    
+    final static String SCRIPTS_OUT_DIR = "dir"; 
+    
     // method used by ScriptChangeObserver
-    static String[] getEngineExtensions() {
+    private String[] getEngineExtensions() {
 		return new String[] { "."+EXTENSION };
     }
     
@@ -95,7 +99,8 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     
     private V8ScriptEngine engine = null;
     
-    // private Session session;
+    private String[] nodeConfigFileNames = { ".babelrc", "package.json" }; 
+    
     private ResourceResolver resolver;
    
     private ObservationManager observationManager;
@@ -157,6 +162,13 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     			}
     		}
     		
+    		File srcDir = new File(scriptsFolder, SCRIPTS_SRC_DIR);
+    		if(!srcDir.exists()) 
+    			srcDir.mkdir();
+    		File outDir = new File(scriptsFolder, SCRIPTS_OUT_DIR);
+    		if(!outDir.exists())
+    			outDir.mkdir();
+    		
     		log.debug("Scripts directory {}. Pool size {}. java.library.path = {}", new Object[] {scriptsFolder.getAbsolutePath(), poolSize, System.getProperty("java.library.path")});
     		scriptLoader = new ScriptLoader(scriptsFolder);
     		scriptsUtil = NodeScriptsUtil.getNodeScriptsUtil();
@@ -189,17 +201,27 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     private void registerChangeListener(ResourceResolver resolver) throws RepositoryException {
     		Session session = resolver.adaptTo( Session.class );
     		this.observationManager = session.getWorkspace().getObservationManager();
-    		this.changeObserver = new ScriptChangeObserver(scriptLoader, resolver);
-    		String[] paths = resolver.getSearchPath();
+    		this.changeObserver = new ScriptChangeObserver(scriptLoader, resolver, getEngineExtensions(), nodeConfigFileNames);
     		
     		JackrabbitObservationManager observationManager = (JackrabbitObservationManager) this.observationManager;
     		
     		JackrabbitEventFilter eventFilter = new JackrabbitEventFilter();
-		eventFilter.setAbsPath(paths[0]).setEventTypes(Event.NODE_ADDED | Event.NODE_REMOVED | Event.PROPERTY_CHANGED)
+		eventFilter.setAbsPath(resolver.getSearchPath()[0]).setEventTypes(Event.NODE_ADDED | Event.NODE_REMOVED | Event.PROPERTY_CHANGED)
 				.setIsDeep(true).setNoLocal(false).setNoExternal(true);
 		
-		if (paths.length > 1) {
-            eventFilter.setAdditionalPaths(paths);
+		ArrayList<String> paths = new ArrayList<String>();
+		for(String searchPath : resolver.getSearchPath()) {
+			paths.add(searchPath);
+		}
+		
+		// add default config file paths
+		for(String configFile : nodeConfigFileNames) {
+			String path = "/" + configFile;
+			paths.add(path);
+		}
+		
+		if (paths.size() > 1) {
+            eventFilter.setAdditionalPaths(paths.toArray(new String[paths.size()]));
         }
 		
 		observationManager.addEventListener(this.changeObserver, eventFilter);

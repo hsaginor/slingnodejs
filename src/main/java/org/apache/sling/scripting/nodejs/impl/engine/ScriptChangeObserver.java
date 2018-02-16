@@ -33,12 +33,16 @@ public class ScriptChangeObserver implements EventListener {
 	
 	private ScriptLoader scriptLoader;
 	private ResourceResolver resolver;
+	private String[] scriptExtensions;
+	private String[] nodeConfigFiles;
 	
-	public ScriptChangeObserver(ScriptLoader scriptLoader, ResourceResolver resolver) {
-		if(scriptLoader == null)
+	public ScriptChangeObserver(ScriptLoader scriptLoader, ResourceResolver resolver, String[] scriptExtensions, String[] nodeConfigFiles) {
+		if(scriptLoader == null || resolver == null || scriptExtensions == null)
 			throw new NullPointerException();
 		this.scriptLoader = scriptLoader;
 		this.resolver = resolver;
+		this.scriptExtensions = scriptExtensions;
+		this.nodeConfigFiles = nodeConfigFiles;
 	}
 	
 	@Override
@@ -58,12 +62,19 @@ public class ScriptChangeObserver implements EventListener {
 						path = path.substring(0, path.indexOf("/jcr:content"));
 					}
 					
-					if(isNodeFile(path)) {
+					if(isScript(path)) {
 						log.debug("Processing change event for {}", path);
 						
 						Resource res = resolver.getResource(path);
 						if(res != null) {
 							scriptLoader.updateScript(res);
+						}
+					} else if(isConfig(path)) {
+						log.debug("Processing change event for {}", path);
+						
+						Resource res = resolver.getResource(path);
+						if(res != null) {
+							scriptLoader.updateConfig(res);
 						}
 					}
 				}
@@ -75,13 +86,23 @@ public class ScriptChangeObserver implements EventListener {
 
 	}
 	
-	private boolean isNodeFile(String path) {
-		for(String extension : V8ScriptEngineFactory.getEngineExtensions()) {
+	private boolean isScript(String path) {
+		for(String extension : scriptExtensions) {
 			if(path.endsWith(extension)) {
 				return true;
 			}
 		}
+	
 		return false;
 	}
 
+	private boolean isConfig(String path) {
+		for(String name : nodeConfigFiles) {
+			if(path.endsWith("/"+name)) {
+				return true;
+			}
+		}
+	
+		return false;
+	}
 }
