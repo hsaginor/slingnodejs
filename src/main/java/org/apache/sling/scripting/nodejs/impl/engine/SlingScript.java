@@ -19,6 +19,7 @@
 package org.apache.sling.scripting.nodejs.impl.engine;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,9 +151,11 @@ public class SlingScript implements Releasable {
         		log.debug("Script return object of type {}", output.getClass());
         		//if(output instanceof V8Object) {
         		//	inspect((V8Object) output);
-        		//}
-			response.getWriter().write(output.toString());
-			response.getWriter().flush();
+        		//} 
+        		if(output instanceof String) {
+        			response.getWriter().write(output.toString());
+        			response.getWriter().flush();
+        		} 
         } catch(Exception e) {
         		log.error("Unable to execure script.", e);
         		exception = new ScriptException(e);
@@ -197,6 +200,11 @@ public class SlingScript implements Releasable {
 		addObject(v8, SlingBindings.REQUEST, request);
 		addObject(v8, SlingBindings.RESPONSE, response);
 		addObject(v8, SlingBindings.RESOURCE, resource);
+		try {
+			addObject(v8, SlingBindings.OUT, response.getWriter());
+		} catch (IOException e) {
+			log.error("Unable to create scripting variable " + SlingBindings.OUT, e);
+		}
 		addObject(v8, "resolver", resolver);
 		addObject(v8, "jcrSession", jcrSession);
 		addObject(v8, "node", resource.adaptTo(Node.class));

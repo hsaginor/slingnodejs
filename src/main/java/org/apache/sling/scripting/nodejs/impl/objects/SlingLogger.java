@@ -18,6 +18,7 @@
  */
 package org.apache.sling.scripting.nodejs.impl.objects;
 
+import org.apache.sling.api.scripting.SlingBindings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ import com.eclipsesource.v8.V8;
 public final class SlingLogger {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SlingLogger.class);
 	
-	public static final String LOGGER_JS_NAME = "log";
+	public static final String LOGGER_JS_NAME = SlingBindings.LOG;
 	
 	public void debug(String statement) {
 		LOGGER.debug(statement);
