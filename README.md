@@ -17,9 +17,9 @@ A running Apache Sling or Adobe AEM server.
 ## Installation Instructions 
 
 1. Download (or clone this project) and install one of the pre-compiled J2V8 OSGi bundles from the [dependencies](./dependencies) folder via Felix Console.
-2. Whitelist org.apache.sling.scripting.nodejs bundle for administrative login. 
+2. Whitelist org.apache.sling.scripting.nodejs bundle for administrative login (may skipped on older versions of Sling or AEM). 
 	* Open configuration manager page in Felix Console (http://localhost:4502/system/console/configMgr on default AEM author port).
-	* Find Apache Sling Login Whitelist Configuration Fragment and click + icon (may not be required on older versions of Sling/AEM).
+	* Find Apache Sling Login Whitelist Configuration Fragment and click + icon.
 	* Enter nodejs as Name and org.apache.sling.scripting.nodejs as Whitelisted BSNs. Then click Save.
 3. Clone this project locally and from the root project folder run the following maven command:
 	> mvn clean install -PautoInstallBundle -Dsling.port=4502 
