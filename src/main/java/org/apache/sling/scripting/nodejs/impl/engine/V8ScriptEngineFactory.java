@@ -74,9 +74,9 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     
     public final static String EXTENSION = "jsx";
     
-    final static String SCRIPTS_SRC_DIR = "src";
+    public final static String SCRIPTS_SRC_DIR = "src";
     
-    final static String SCRIPTS_OUT_DIR = "dir"; 
+    public final static String SCRIPTS_OUT_DIR = "out"; 
     
     // method used by ScriptChangeObserver
     private String[] getEngineExtensions() {

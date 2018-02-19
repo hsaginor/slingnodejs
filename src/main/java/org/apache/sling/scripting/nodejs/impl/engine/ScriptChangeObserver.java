@@ -57,6 +57,7 @@ public class ScriptChangeObserver implements EventListener {
 				
 				if(nextEvent.getType() == Event.NODE_REMOVED) {
 					log.debug("Processing delete event for {}", path);
+					scriptLoader.deleteFiles(path);
 				} else {
 					if(path.endsWith("/jcr:content/jcr:data") || path.endsWith("/jcr:content")) {
 						path = path.substring(0, path.indexOf("/jcr:content"));

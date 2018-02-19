@@ -90,7 +90,21 @@ public class NodeJSFilesPlugin extends AbstractWebConsolePlugin {
 		PrintWriter writer = response.getWriter();
 		
 		writer.println("NodeJS Scripts Path: " + scriptsPath + "<br/>");
-		
+		String compiledPath = scriptsPath + "/" + V8ScriptEngineFactory.SCRIPTS_OUT_DIR;
+		File dir = new File(compiledPath);
+		if(dir.exists() && dir.isDirectory()) {
+			listFiles(dir, writer);
+		}
+	}
+	
+	private void listFiles(File dir, PrintWriter writer) {
+		for(File f : dir.listFiles()) {
+			if(f.isDirectory()) {
+				listFiles(f, writer);
+			} else if(f.isFile()) {
+				writer.println(f.getAbsolutePath() + "<br/>");
+			}
+		}
 	}
 
 }

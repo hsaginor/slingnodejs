@@ -69,6 +69,45 @@ public class ScriptLoader {
 		this.changeListener = changeListener;
 	}
 	
+	void deleteFiles(String resourcePath) {
+		File file = mapResourceToCompiledScriptFile(resourcePath);
+		if(file.exists()) {
+			deleteFile(file);
+		}
+		
+		file = mapResourceToSrcScriptFile(resourcePath);
+		if(file.exists()) {
+			deleteFile(file);
+		}
+		
+		file = mapResourceToFile(resourcePath);
+		if(file.exists()) {
+			deleteFile(file);
+		}
+	}
+	
+	private void deleteFile(File file) {
+		log.debug("Deleting {}", file.getAbsolutePath());
+		if(file.isDirectory()) {
+			if(!deleteDir(file)) {
+				log.warn("Unabel to delete {}", file.getAbsolutePath());
+			}
+		} else if(!file.delete()) {
+			log.warn("Unabel to delete {}", file.getAbsolutePath());
+		}
+	}
+	
+	private boolean deleteDir(File dir) {
+		for(File file : dir.listFiles()) {
+			if(file.isDirectory()) {
+				deleteDir(file);
+			} else if(file.isFile()) {
+				file.delete();
+			}
+		}
+		return dir.delete();
+	}
+	
 	void updateConfig(Resource scriptResource) throws ScriptException {
 		lockToRead(scriptResource);
 		
@@ -197,17 +236,27 @@ public class ScriptLoader {
 	
 	private File mapResourceToFile(Resource scriptResource) {
 		String resourcePath = scriptResource.getPath().substring(1);
+		return mapResourceToFile(resourcePath);
+	}
+	
+	private File mapResourceToFile(String resourcePath) {
 		return new File(scriptsRootDir, resourcePath);
 	}
 	
 	private File mapResourceToCompiledScriptFile(Resource scriptResource) {
-		String resourcePath = scriptResource.getPath();
-		return new File(scriptsRootDir, "out"+resourcePath.replace(".jsx", ".js"));
+		return mapResourceToCompiledScriptFile(scriptResource.getPath()); 
+	}
+	
+	private File mapResourceToCompiledScriptFile(String resourcePath) {
+		return new File(scriptsRootDir, V8ScriptEngineFactory.SCRIPTS_OUT_DIR+resourcePath.replace(".jsx", ".js"));
 	}
 	
 	private File mapResourceToSrcScriptFile(Resource scriptResource) {
-		String resourcePath = scriptResource.getPath();
-		return new File(scriptsRootDir, "src"+resourcePath);
+		return mapResourceToSrcScriptFile(scriptResource.getPath());
+	}
+	
+	private File mapResourceToSrcScriptFile(String resourcePath) {
+		return new File(scriptsRootDir, V8ScriptEngineFactory.SCRIPTS_SRC_DIR+resourcePath);
 	}
 	
 	private void writeFile(Resource scriptResource, File scriptFile) throws IOException {
