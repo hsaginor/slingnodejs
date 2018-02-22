@@ -134,24 +134,31 @@ public class V8ObjectWrapper implements Releasable {
 		
 		@Override
 		public Object invoke(V8Object receiver, V8Array parameters) {
-			Object[] methodArgs = getArgs(parameters);
-			
-			Method method = getMethod(methods, methodArgs);
-			if(method == null) {
-				String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name + ". Parameter list does not match.";
-				log.error(msg);
-				throw new V8WrapperCallException(msg);
-			}
+			Object[] methodArgs = null;
 			
 			try {
-				return invokeMethod(method, methodArgs);
-			} catch (Exception e) {
-				String msg = "Unable to invoke " 
-							+ callableObject.getClass().getName() 
-							+ "." + method.getName();
-				log.error(msg, e);
-				throw new V8WrapperCallException(msg, e);
-			} 
+				methodArgs = getArgs(parameters);
+				Method method = getMethod(methods, methodArgs);
+				if(method == null) {
+					String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name + ". Parameter list does not match.";
+					log.error(msg);
+					throw new V8WrapperCallException(msg);
+				}
+				
+				try {
+					return invokeMethod(method, methodArgs);
+				} catch (Exception e) {
+					String msg = "Unable to invoke " 
+								+ callableObject.getClass().getName() 
+								+ "." + method.getName();
+					log.error(msg, e);
+					throw new V8WrapperCallException(msg, e);
+				} 
+			} finally {
+				if(methodArgs != null) {
+					releaseArgs(methodArgs);
+				}
+			}
 		}
 		
 	};
@@ -187,22 +194,31 @@ public class V8ObjectWrapper implements Releasable {
 		
 		@Override
 		public void invoke(V8Object receiver, V8Array parameters) {
-			Object[] methodArgs = getArgs(parameters);
-			
-			Method method = getMethod(methods, methodArgs);
-			if(method == null) {
-				String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name + ". Parameter list does not match.";
-				log.error(msg);
-				throw new V8WrapperCallException(msg);
-			}
+			Object[] methodArgs = null;
 			
 			try {
-				invokeVoidMethod(method, methodArgs);
-			} catch (Exception e) {
-				String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name;
-				log.error(msg, e);
-				throw new V8WrapperCallException(msg, e);
-			} 
+				methodArgs = getArgs(parameters);
+				
+				Method method = getMethod(methods, methodArgs);
+				if(method == null) {
+					String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name + ". Parameter list does not match.";
+					log.error(msg);
+					throw new V8WrapperCallException(msg);
+				}
+				
+				try {
+					invokeVoidMethod(method, methodArgs);
+				} catch (Exception e) {
+					String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name;
+					log.error(msg, e);
+					throw new V8WrapperCallException(msg, e);
+				} 
+			} finally {
+				if(methodArgs != null) {
+					releaseArgs(methodArgs);
+				}
+			}
+			
 		}
 		
 	};
@@ -224,11 +240,16 @@ public class V8ObjectWrapper implements Releasable {
 		for(int i=0; i<methodArgs.length; i++) {
 			Object arg = parameters.get(i);
 			methodArgs[i] = arg;
+		}
+		return methodArgs;
+	}
+	
+	private void releaseArgs(Object[] args) {
+		for(Object arg : args) {
 			if(arg instanceof Releasable) {
 				((Releasable)arg).release();
 			}
 		}
-		return methodArgs;
 	}
 	
 	private Method getMethod(List<Method> methods, Object[] methodArgs) {
