@@ -18,14 +18,13 @@
  */
 package org.apache.sling.scripting.nodejs.impl.objects;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.sling.scripting.nodejs.impl.engine.V8WrapperCallException;
+import org.apache.sling.scripting.nodejs.impl.exceptions.V8WrapperCallException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +34,6 @@ import com.eclipsesource.v8.Releasable;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8Value;
-import com.eclipsesource.v8.utils.V8ObjectUtils;
 
 /**
  * V8Object wrapper that uses java reflection to expose object's public methods to V8 runtime.
@@ -52,6 +49,11 @@ public class V8ObjectWrapper implements Releasable {
 	private V8Object register;
 	private String asName;
 	private Object callableObject;
+	
+	// V8 provides only a way to handle primitives.
+	// The ThreadLocal objectsCache is used to store and access wrapped objects when references are passed back from
+	// JavaScript to Java
+	private static final ThreadLocal<Map<String, Object>> objectsCache = new ThreadLocal<Map<String, Object>>();
 	
 	/**
 	 * Constructor.
@@ -71,6 +73,7 @@ public class V8ObjectWrapper implements Releasable {
 		this.asName = asName.trim();
 		register = new V8Object(runtime);
 		initCallbacks();
+		setCache();
 	}
 	
 	private V8ObjectWrapper(V8 runtime, Object callableObject) {
@@ -84,12 +87,43 @@ public class V8ObjectWrapper implements Releasable {
 		this.callableObject = callableObject;
 		register = new V8Object(runtime);
 		initCallbacks();
+		setCache();
 	}
 	
 	@Override
 	public void release() {
+		objectsCache.get().remove(self());
 		register.release();
 		log.debug("Released {}", callableObject.getClass().getName());
+	}
+	
+	/**
+	 * Convenience method returns an instance of the wrapped java object provided that receiver parameter represents one.
+	 * 
+	 * @param receiver
+	 * @return Wrapped Java object if if receiver represents one. Null if it does not.
+	 */
+	public static final Object getSelf(V8Object receiver) {
+		if(receiver.contains("self")) {
+			String key = receiver.executeStringFunction("self", null);
+			if(objectsCache.get().containsKey(key)) {
+				return objectsCache.get().get(key);
+			}
+		}
+		return null;
+	}
+	
+	private String self() {
+		return Long.toString(register.hashCode());
+	}
+	
+	private void setCache() {
+		Map<String, Object> cache = objectsCache.get();
+		if(cache == null) {
+			cache = new HashMap<String, Object>();
+			objectsCache.set(cache);
+		}
+		cache.put(self(), callableObject);
 	}
 	
 	private void initCallbacks() {
@@ -110,6 +144,18 @@ public class V8ObjectWrapper implements Releasable {
 			//	logMethod(callableObject.getClass().getName(), methodName, types);
 			//}
 		}
+		
+		// a way to get back the original object for when V8Object instance is passed back to java
+		
+		register.registerJavaMethod(new JavaCallback() {
+
+			@Override
+			public Object invoke(V8Object receiver, V8Array parameters) {
+				// return new SelfValue(runtime, self());
+				return self();
+			}
+			
+		}, "self");
 	}
 	
 	private Object getReturnResult(final Object result) {
@@ -125,7 +171,6 @@ public class V8ObjectWrapper implements Releasable {
         }
         
         V8ObjectWrapper wrapper = new V8ObjectWrapper(runtime, result);
-        // returnedObjects.add(wrapper);
         return wrapper.register.twin();
     }
 	

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sling.scripting.nodejs.impl.engine;
+package org.apache.sling.scripting.nodejs.impl.exceptions;
 
 public class V8WrapperCallException extends RuntimeException {
 

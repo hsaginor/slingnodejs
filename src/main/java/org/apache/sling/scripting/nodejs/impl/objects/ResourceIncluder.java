@@ -34,6 +34,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.resource.SyntheticResource;
 import org.apache.sling.scripting.core.servlet.CaptureResponseWrapper;
+import org.apache.sling.scripting.nodejs.impl.exceptions.SlingIncludeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,6 +130,7 @@ public class ResourceIncluder implements JavaVoidCallback {
         } else {
         		log.warn("Unable to render content included on {}. Make sure either resource or path argument is specified.", 
         				new Object[] {request.getRequestPathInfo().getResourcePath()});
+        		throw new SlingIncludeException("Unable to render content included. Neither resource nor path is defined.");
         }
 	}
 	
@@ -153,7 +155,6 @@ public class ResourceIncluder implements JavaVoidCallback {
 	}
 	
 	private void inspect(V8Object obj) {
-		log.debug("include config V8Object:");
 		for(String k : obj.getKeys()) {
 			// int type = obj.getType(k);
 			log.info("		key: {}", new Object[]{k});
@@ -172,8 +173,13 @@ public class ResourceIncluder implements JavaVoidCallback {
 		for(String k : config.getKeys()) {
 			if(RESOURCE_ARG.equals(k)) {
 				Object obj = config.get(k);
-				if(obj instanceof Resource) {
-					options.resource = (Resource) obj;
+				if(obj instanceof V8Object) {
+					
+					obj = V8ObjectWrapper.getSelf((V8Object)obj);
+					if(obj != null && (obj instanceof Resource)) {
+						options.resource = (Resource) obj;
+					}
+					
 				} else {
 					log.warn("The resource include argument type {} is not recognized", obj.getClass().getName());
 				}
