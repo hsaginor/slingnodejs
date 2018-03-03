@@ -73,19 +73,6 @@ public class V8ObjectWrapper implements Releasable {
 		initCallbacks();
 	}
 	
-	private V8ObjectWrapper(V8 runtime, Object callableObject) {
-		// super(runtime, callableObject);
-		
-		if(callableObject == null) {
-			throw new IllegalArgumentException();
-		}
-		
-		this.runtime = runtime;
-		this.callableObject = callableObject;
-		register = new V8Object(runtime);
-		initCallbacks();
-	}
-	
 	@Override
 	public void release() {
 		register.release();
@@ -93,9 +80,7 @@ public class V8ObjectWrapper implements Releasable {
 	}
 	
 	private void initCallbacks() {
-		if(asName != null) {
-			runtime.add(asName, register);
-		} 
+		runtime.add(asName, register);
 		for(Method m : callableObject.getClass().getMethods()) {
 			String methodName = m.getName();
 			Class<?>[] types = m.getParameterTypes();
@@ -106,28 +91,11 @@ public class V8ObjectWrapper implements Releasable {
 				addCallback(m);
 			}
 			
-			//if(log.isDebugEnabled()) {
-			//	logMethod(callableObject.getClass().getName(), methodName, types);
-			//}
+			if(log.isDebugEnabled()) {
+				logMethod(callableObject.getClass().getName(), methodName, types);
+			}
 		}
 	}
-	
-	private Object getReturnResult(final Object result) {
-        if (result == null) {
-            return result;
-        }
-        if (result instanceof Float) {
-            return ((Float) result).doubleValue();
-        }
-        if ((result instanceof Integer) || (result instanceof Double) || (result instanceof Boolean)
-                || (result instanceof String)) {
-            return result;
-        }
-        
-        V8ObjectWrapper wrapper = new V8ObjectWrapper(runtime, result);
-        // returnedObjects.add(wrapper);
-        return wrapper.register.twin();
-    }
 	
 	private void logMethod(String type, String name, Class<?>[] argTypes) {
 		StringBuilder sb = new StringBuilder("Registering ");
@@ -177,9 +145,8 @@ public class V8ObjectWrapper implements Releasable {
 					throw new V8WrapperCallException(msg);
 				}
 				
-				log.debug("Invoking method {}.{}", new Object[] {callableObject.getClass().getName(), name});
 				try {
-					return getReturnResult(invokeMethod(method, methodArgs));
+					return invokeMethod(method, methodArgs);
 				} catch (Exception e) {
 					String msg = "Unable to invoke " 
 								+ callableObject.getClass().getName() 

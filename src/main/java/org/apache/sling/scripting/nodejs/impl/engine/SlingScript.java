@@ -36,6 +36,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
+import org.apache.sling.scripting.nodejs.impl.objects.ResourceIncluder;
 import org.apache.sling.scripting.nodejs.impl.objects.V8ObjectWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +189,7 @@ public class SlingScript implements Releasable {
 	}
 
 	private void initObjects(V8 v8) {
+		log.debug("Initializing scripting objects for {}", scriptResource.getPath());
 		Bindings bindings = context.getBindings(ScriptContext.ENGINE_SCOPE);
         SlingScriptHelper scriptHelper = (SlingScriptHelper) bindings.get("sling");
         SlingHttpServletResponse response = (SlingHttpServletResponse) bindings.get(SlingBindings.RESPONSE);
@@ -209,6 +211,10 @@ public class SlingScript implements Releasable {
 		addObject(v8, "jcrSession", jcrSession);
 		addObject(v8, "node", resource.adaptTo(Node.class));
 		addObject(v8, "properties", resource.adaptTo(ValueMap.class));
+		
+		ResourceIncluder resourceIncluder = new ResourceIncluder(request, response, v8);
+		v8.registerJavaMethod(resourceIncluder, "slingInclude");
+		log.debug("Finished initializing scripting objects for {}", scriptResource.getPath());
 	}
 
 	private void addObject(V8 v8, String name, Object object) {
