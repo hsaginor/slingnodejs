@@ -104,7 +104,7 @@ slingInclude({"resource":resourceToInclude, "var":"myVar"});
 ```
 
 ```javascript
-slingInclude({"path":"/content/mysite/en/jcr:content/aresource", "resourceType":"mayapp/conponents/mycomp"});
+slingInclude({"path":"/content/mysite/en/jcr:content/aresource", "resourceType":"mayapp/conponents/mycomp"}); 
 ```
 
 ## Simple Script Example
