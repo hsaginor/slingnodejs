@@ -1,14 +1,10 @@
-# slingnodejs
-
-Apache Sling NodeJS Scripting Bridge using J2V8
+# Apache Sling NodeJS Scripting.
 
 This project is intended to provide a way to build isomorphic JavaScript applications on top of Apache Sling, rendered natively in NodeJS.  
 
 A script must end in a .jsx extension and export an object with a *renderServerResponse()* method. The *renderServerResponse()* method can return generated content as string which will be written to response, or write directly to response via *out* variable. 
 
 Currently only server side rendering is implemented. However in theory it should be possible to statically include a pre-compiled JavaScript bundle in server side generated markup to provide client side rendering.
-
-What else is not yet implemented? A simple way to include other resources and resource types as with <cq:include> or <sling:include> JSP tags.
     
 ## Installation Requirements
 
@@ -72,16 +68,44 @@ You should also see a new menu item in Felix Console named Sling NodeJS. Navigat
 
 The following variables are available to scripts for server side rendering.
 
-* sling - global sling variable as defined by [SlingScriptHelper](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/scripting/SlingScriptHelper.html) interface.
-* out - global scripting variable providing access to java.io.PrintWriter object for writing to response.  
-* request - current request object defined by [SlingHttpServletRequest](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/SlingHttpServletRequest.html) interface. 
-* response - current request object defined by [SlingHttpServletResponse](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/SlingHttpServletResponse.html) interface. 
-* resolver - current ResourceResolver. This is the same object as returned by request.getResourceResolver() method.  
-* resource - current resource. This is the same object as returned by request.getResource() method.
-* properties - current resource properties or the [ValueMap](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/resource/ValueMap.html) for the current resource.
-* jcrSession - current JCR session.
-* node - current JCR node.
-* log - server side log object.
+* **sling** - global sling variable as defined by [SlingScriptHelper](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/scripting/SlingScriptHelper.html) interface.
+* **out** - global scripting variable providing access to java.io.PrintWriter object for writing to response.  
+* **request** - current request object defined by [SlingHttpServletRequest](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/SlingHttpServletRequest.html) interface. 
+* **response** - current request object defined by [SlingHttpServletResponse](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/SlingHttpServletResponse.html) interface. 
+* **resolver** - current ResourceResolver. This is the same object as returned by request.getResourceResolver() method.  
+* **resource** - current resource. This is the same object as returned by request.getResource() method.
+* **properties** - current resource properties or the [ValueMap](https://sling.apache.org/apidocs/sling9/org/apache/sling/api/resource/ValueMap.html) for the current resource.
+* **jcrSession** - current JCR session.
+* **node** - current JCR node.
+* **log** - server side log object.
+
+## Sling Include
+
+Another sling resource can be included in current response rendering using *slingInclude(config)* function. The single parameter passed to this function is a configuration object that can have the following properties.
+
+* **resource** - Resource object to include. Either resource or path mast be specified. If both are present then resource object takes precedence. 
+* **path** - Path of the resource to include. Either resource or path mast be specified. If both are present then resource object takes precedence. 
+* **var** - Name of JavaScript variable to assign resource output to. If not present it is written directly to response output.
+* **resourceType** - The resource type to use when rendering target resource. 
+* **replaceSelectors** - Replace current request selectors with the value specified.
+* **addSelectors** - Add the value specified to current request selectors.
+* **replaceSuffix** - Replace current request suffix with the value specified.
+* **flush** - If set to true response output will be flushed before including the target resource.
+
+*Usage Examples*
+
+```javascript
+slingInclude({"path":"/content/mysite/en/jcr:content/aresource", "var":"myVar"})
+```
+
+```javascript
+const resourceToInclude = resolver.getResource("/content/mysite/en/jcr:content/aresource");
+slingInclude({"resource":resourceToInclude, "var":"myVar"})
+```
+
+```javascript
+slingInclude({"path":"/content/mysite/en/jcr:content/aresource", "resourceType":"mayapp/conponents/mycomp"}
+```
 
 ## Simple Script Example
 
