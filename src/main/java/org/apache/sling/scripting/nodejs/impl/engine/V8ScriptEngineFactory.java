@@ -36,6 +36,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
+import org.apache.sling.scripting.nodejs.impl.objects.V8ObjectWrapper;
 import org.apache.sling.scripting.nodejs.impl.threadpool.ScriptExecutionPool;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceException;
@@ -142,11 +143,8 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     protected void activate(final ComponentContext context, final V8ScriptEngineConfiguration config) throws Exception {
     		log.debug("Activating V8 Node scripting.");
     		
-    		// Dictionary<?, ?> properties = context.getProperties();
-    		// BundleContext bundleContext = context.getBundleContext();
-    		
-    		poolSize = config.poolSize() > 0 ? config.poolSize() : V8ScriptEngineConfiguration.DEFAULT_NODE_POOL_SIZE; // PropertiesUtil.toInteger(properties.get(POOL_SIZE_PROPERTY), DEFAULT_NODE_POOL_SIZE);
-    		String scriptsPath = config.scriptsFilePath(); // PropertiesUtil.toString(properties.get(NODE_SCRIPTS_FILEPATH_PROPERTY), "").trim();
+    		poolSize = config.poolSize() > 0 ? config.poolSize() : V8ScriptEngineConfiguration.DEFAULT_NODE_POOL_SIZE; 
+    		String scriptsPath = config.scriptsFilePath(); 
     		
     		File scriptsFolder = null;
     		if(scriptsPath == null || scriptsPath.length() == 0) {
@@ -175,6 +173,11 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     		
     		threadPool = new ScriptExecutionPool(poolSize);
     		engine = new V8ScriptEngine(this, threadPool);
+    		
+    		long maxScriptObjects = config.maxScriptObjects();
+    		if(maxScriptObjects > 0 && maxScriptObjects != V8ObjectWrapper.DEFAULT_MAX_CACHED_OBJECTS) {
+    			V8ObjectWrapper.setMaxChachedObjects(maxScriptObjects);
+    		}
     		
     		// TODO change to service user
     		resolver = resourceResolverFactory.getAdministrativeResourceResolver(null);

@@ -45,15 +45,19 @@ public class V8ObjectWrapper implements Releasable {
 
 	private static final Logger log = LoggerFactory.getLogger(V8ObjectWrapper.class);
 			
+	public static final long DEFAULT_MAX_CACHED_OBJECTS = 1000;
+	
 	private V8 runtime;
 	private V8Object register;
 	private String asName;
 	private Object callableObject;
+	private static long maxChachedObjects = DEFAULT_MAX_CACHED_OBJECTS;
 	
 	// V8 provides only a way to handle primitives.
 	// The ThreadLocal objectsCache is used to store and access wrapped objects when references are passed back from
 	// JavaScript to Java
-	private static final ThreadLocal<Map<String, Object>> objectsCache = new ThreadLocal<Map<String, Object>>();
+	private static final ThreadLocal<Map<String, V8ObjectWrapper>> objectsCache = new ThreadLocal<Map<String, V8ObjectWrapper>>();
+	private List<String> cacheKeys = new ArrayList<String>();
 	
 	/**
 	 * Constructor.
@@ -76,6 +80,13 @@ public class V8ObjectWrapper implements Releasable {
 		setCache();
 	}
 	
+	/**
+	 * This private constructor is only used when returning non-primitive Java objects from JavaScript callbacks.
+	 * Since J2V8 only supports primitive we need to wrap these as well. 
+	 * 
+	 * @param runtime
+	 * @param callableObject
+	 */
 	private V8ObjectWrapper(V8 runtime, Object callableObject) {
 		// super(runtime, callableObject);
 		
@@ -90,15 +101,37 @@ public class V8ObjectWrapper implements Releasable {
 		setCache();
 	}
 	
+	public long getMaxChachedObjects() {
+		return maxChachedObjects;
+	}
+
+	public static void setMaxChachedObjects(long maxChachedObjects) {
+		V8ObjectWrapper.maxChachedObjects = maxChachedObjects;
+	}
+
 	@Override
 	public void release() {
-		objectsCache.get().remove(self());
+		clearCache();
 		register.release();
-		log.debug("Released {}", callableObject.getClass().getName());
+		log.debug("{} objects left in cache.", new Object[] {objectsCache.get().size()});
+	}
+	
+	private void clearCache() {
+		for(String k : cacheKeys) {
+			V8ObjectWrapper next = objectsCache.get().get(k);
+			if(next != null) {
+				next.release();
+			}
+		}
+		String self = self();
+		if(objectsCache.get().containsKey(self)) {
+			objectsCache.get().remove(self);
+			log.debug("Released {} from cache.", new Object[] {this.callableObject.getClass().getName()});
+		}
 	}
 	
 	/**
-	 * Convenience method returns an instance of the wrapped java object provided that receiver parameter represents one.
+	 * Convenience method that returns an instance of the wrapped java object provided that receiver parameter represents one.
 	 * 
 	 * @param receiver
 	 * @return Wrapped Java object if if receiver represents one. Null if it does not.
@@ -107,7 +140,7 @@ public class V8ObjectWrapper implements Releasable {
 		if(receiver.contains("self")) {
 			String key = receiver.executeStringFunction("self", null);
 			if(objectsCache.get().containsKey(key)) {
-				return objectsCache.get().get(key);
+				return objectsCache.get().get(key).callableObject;
 			}
 		}
 		return null;
@@ -118,12 +151,17 @@ public class V8ObjectWrapper implements Releasable {
 	}
 	
 	private void setCache() {
-		Map<String, Object> cache = objectsCache.get();
+		Map<String, V8ObjectWrapper> cache = objectsCache.get();
 		if(cache == null) {
-			cache = new HashMap<String, Object>();
+			cache = new HashMap<String, V8ObjectWrapper>();
 			objectsCache.set(cache);
 		}
-		cache.put(self(), callableObject);
+		
+		if(objectsCache.get().size() >= getMaxChachedObjects()) {
+			throw new V8WrapperCallException("Maximum per request scriptable objects reached. Too many non-primitive objects returned from Java. Consider refectoring your JS code to create fewer scriptable objects in Java.");
+		}
+		
+		cache.put(self(), this);
 	}
 	
 	private void initCallbacks() {
@@ -170,7 +208,9 @@ public class V8ObjectWrapper implements Releasable {
             return result;
         }
         
+        log.debug("Wrapping method return result of type {}", result.getClass().getName());
         V8ObjectWrapper wrapper = new V8ObjectWrapper(runtime, result);
+        this.cacheKeys.add(wrapper.self());
         return wrapper.register.twin();
     }
 	
