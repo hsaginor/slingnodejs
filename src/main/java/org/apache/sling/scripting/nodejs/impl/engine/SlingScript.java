@@ -121,6 +121,9 @@ public class SlingScript implements Releasable {
 		return output;
 	}
 	
+	// TODO:
+	// This method exists only to support executing scripts directly from a file during unit testing.
+	// Need to rewrite unit tests to run within Sling context using Sling Testing frameworks and remove this.
 	private void evalScriptFile(NodeJS nodeJS) {
 		V8Object v8script = null;
 		
@@ -146,17 +149,17 @@ public class SlingScript implements Releasable {
         try {
         		log.debug("eval script {} for resource {}", new Object[] {scriptResource.getPath(), scriptHelper.getRequest().getResource().getPath()} );
         		File scriptFile = loader.loadScriptFile(scriptResource);
-        		v8script = (V8Object) nodeJS.require(scriptFile);
-			// String output = v8script.executeStringFunction("render", null);
-        		Object output = v8script.executeFunction(DEFAULT_SERVER_METHOD, null);
-        		log.debug("Script return object of type {}", output.getClass());
-        		//if(output instanceof V8Object) {
-        		//	inspect((V8Object) output);
-        		//} 
-        		if(output instanceof String) {
-        			response.getWriter().write(output.toString());
-        			response.getWriter().flush();
-        		} 
+        		v8script = require(nodeJS, scriptFile);
+        		if(v8script != null) {
+        			Object output = v8script.executeFunction(getServerMethodName(), null);
+        			// log.debug("Script return object of type {}", output.getClass()); 
+        			if(output instanceof String) {
+        				response.getWriter().write(output.toString());
+        				response.getWriter().flush();
+        			}
+        		} else {
+        			exception = new ScriptException("Method " + getServerMethodName() + " is not defined in the script " + scriptResource.getPath());
+        		}
         } catch(Exception e) {
         		log.error("Unable to execure script.", e);
         		exception = new ScriptException(e);
@@ -167,6 +170,37 @@ public class SlingScript implements Releasable {
         		executed = true;
         		loader.unlockToRead(scriptResource);
         }
+	}
+	
+	private V8Object require(NodeJS nodeJS, File scriptFile) {
+		V8Object script = (V8Object) nodeJS.require(scriptFile);
+		
+		String methodName = getServerMethodName();
+		if(script.contains(methodName)) {
+			log.debug("Found server script in {}.", new Object[] {scriptResource.getPath()});
+			return script;
+		} else {
+			for(String key : script.getKeys()) {
+				Object next = script.get(key);
+				if(next instanceof V8Object) {
+					V8Object nextV8Obj = (V8Object) next;
+					if(nextV8Obj.contains(methodName)) {
+						log.debug("Found server script in {}. Exported as {}.", new Object[] {scriptResource.getPath(), key});
+						return nextV8Obj;
+					}
+				}
+				
+				if(next instanceof Releasable) {
+					((Releasable) next).release();
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	public String getServerMethodName() {
+		return DEFAULT_SERVER_METHOD;
 	}
 	
 	public boolean isExecuted() {
