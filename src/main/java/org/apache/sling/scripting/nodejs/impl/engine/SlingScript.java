@@ -36,6 +36,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
+import org.apache.sling.scripting.nodejs.impl.clientside.ScriptCollector;
 import org.apache.sling.scripting.nodejs.impl.objects.ResourceIncluder;
 import org.apache.sling.scripting.nodejs.impl.objects.V8ObjectWrapper;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ public class SlingScript implements Releasable {
 	
 	private ScriptContext context;
 	private ScriptLoader loader;
+	// private ScriptCollector scriptCollector;
 	private List<Releasable> scriptableObjects = new ArrayList<Releasable>(); 
 	
 	private Bindings bindings;
@@ -78,9 +80,10 @@ public class SlingScript implements Releasable {
 	 * @param loader
 	 * @throws ScriptException 
 	 */
-	public SlingScript(ScriptContext context, ScriptLoader loader) throws ScriptException {
+	public SlingScript(ScriptContext context, ScriptLoader loader /*, ScriptCollector scriptCollector */) throws ScriptException {
 		this.context = context;
 		this.loader = loader;
+		// this.scriptCollector = scriptCollector;
 		init();
 	}
 	
@@ -91,6 +94,10 @@ public class SlingScript implements Releasable {
         scriptResource = scriptHelper.getScript().getScriptResource();
 	}
 	
+	public File getScriptFile() {
+		return scriptFile;
+	}
+
 	/**
 	 * This constructor can be used to test script execution outside of Sling.
 	 * 
@@ -157,6 +164,9 @@ public class SlingScript implements Releasable {
         				response.getWriter().write(output.toString());
         				response.getWriter().flush();
         			}
+        			
+        			this.scriptFile = scriptFile;
+        			// scriptCollector.add(scriptFile.getAbsolutePath());
         		} else {
         			exception = new ScriptException("Method " + getServerMethodName() + " is not defined in the script " + scriptResource.getPath());
         		}

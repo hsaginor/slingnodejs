@@ -203,6 +203,13 @@
 			<scope>provided</scope>
 		</dependency>
 		
+		<dependency>
+		    <groupId>org.apache.sling</groupId>
+		    <artifactId>adapter-annotations</artifactId>
+		    <version>1.0.0</version>
+		    <scope>provided</scope>
+		</dependency>
+		
 		<!-- Testing -->
 		<dependency>
   			<groupId>org.apache.sling</groupId>

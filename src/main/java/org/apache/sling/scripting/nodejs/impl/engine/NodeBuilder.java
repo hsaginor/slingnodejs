@@ -20,9 +20,11 @@ package org.apache.sling.scripting.nodejs.impl.engine;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +33,73 @@ public class NodeBuilder {
 
 	private final Logger log = LoggerFactory.getLogger( NodeBuilder.class );
 	
-	private final String INSTALL_COMMAND = "npm install -S";
+	private static final String INSTALL_COMMAND = "npm install -S -D";
 	
-	private final String BUILD_COMMAND = "npm run build";
+	private static final String INSTALL_BROWSERIFY = "npm install -g browserify grasp";
 	
+	private static final String BUILD_COMMAND = "npm run build";
+	
+	public static final String BUNDLE_FILE_SELECTOR = ".bundle.";
+	
+	public synchronized void init(File dir) {
+		executeCommand(INSTALL_COMMAND, dir);
+		executeCommand(INSTALL_BROWSERIFY, dir);
+	}
 	public synchronized void executeInstall(File dir) {
 		executeCommand(INSTALL_COMMAND, dir);
 	}
 	
 	public synchronized void executeBuild(File dir) {
 		executeCommand(BUILD_COMMAND, dir);
+	}
+	
+	public synchronized void browserfy(File buildDir, List<String> scripts, String outputFilePath) {
+		File outputFile = new File(outputFilePath);
+		if(outputFile.exists()) {
+			// This file is already created
+			return;
+		} else {
+			outputFile = null;
+		}
+		
+		// Build the command
+		StringBuilder commandBuilder = new StringBuilder("browserify ");
+		commandBuilder.append("-t graspify ");
+		//commandBuilder.append(scripts.get(0)).append(' ');
+		//commandBuilder.append("-t graspify -e 'renderServerResponse() { _$ }' -R '// browserified'  ");
+		for(String f : scripts) {
+			commandBuilder.append(f).append(' ');
+		}
+		commandBuilder.append("-o ").append(outputFilePath);
+		
+		// Run the command
+		String command = commandBuilder.toString();
+		Process p = executeCommand(command, buildDir);
+		
+		// delete old generated bundles
+		if(p.exitValue() == 0) {
+			String dirPath = outputFilePath.substring(0, outputFilePath.lastIndexOf('/'));
+			File dir = new File(dirPath);
+			if(dir.exists() && dir.isDirectory()) {
+				File oldFiles[] = dir.listFiles(new FilenameFilter() {
+					@Override
+					public boolean accept(File dir, String name) {
+						return name.contains(BUNDLE_FILE_SELECTOR);
+					}
+				});
+				
+				for(File f : oldFiles) {
+					if(f.exists() && f.isFile() && !outputFilePath.equals(f.getAbsolutePath())) {
+						log.debug("Deleting old JS bundle {}.", f.getAbsolutePath());
+						if(!f.delete()) {
+							log.warn("Unable to delete {}.", f.getAbsolutePath());
+						}
+					}
+				}
+			} else {
+				log.error("Unable to delete old bundles. Directory {} does not exist.", dirPath);
+			}
+		}
 	}
 	
 	private Process executeCommand(String command, File dir) {
@@ -52,9 +111,11 @@ public class NodeBuilder {
 			int exitValue = p.exitValue();
 			
 			if(exitValue == 0) {
-				String info = getCommandInput(p.getInputStream());
-				log.debug("Command '{}' exited with value {}", new Object[] {command,exitValue});
-				log.debug(info);
+				if(log.isDebugEnabled()) {
+					String info = getCommandInput(p.getInputStream());
+					log.debug("Command '{}' exited with value {}", new Object[] {command,exitValue});
+					log.debug(info);
+				}
 			} else {
 				String error = getCommandInput(p.getErrorStream());
 				log.error("Command '{}' exited with value {}", new Object[] {command,exitValue});
