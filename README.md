@@ -3,8 +3,6 @@
 This project is intended to provide a way to build isomorphic JavaScript applications on top of Apache Sling, rendered natively in NodeJS.  
 
 A script must end in a .jsx extension and export an object with a *renderServerResponse()* method. The *renderServerResponse()* method can return generated content as string which will be written to response, or write directly to response via *out* variable. 
-
-Currently only server side rendering is implemented. However in theory it should be possible to statically include a pre-compiled JavaScript bundle in server side generated markup to provide client side rendering.
     
 ## Installation Requirements
 
@@ -106,6 +104,30 @@ slingInclude({"resource":resourceToInclude, "var":"myVar"});
 ```javascript
 slingInclude({"path":"/content/mysite/en/jcr:content/aresource", "resourceType":"mayapp/conponents/mycomp"}); 
 ```
+
+## Client Side Rendering
+
+There are 2 options for client side rendering.
+
+### Option 1
+
+Reference client side JavaScript bundle generate by the scripting engine.
+
+The engine will automatically collect all JSX resources used to generate server side markup and dynamically build client side bundle. All a developer needs to do is reference the generated bundle via src attribute of a script tag and write some client side JavaScript to initialize client side rendering.
+
+The URL to generated JavaScript bundle follows this pattern - /clientlib/\<resource path\>/jsbundle.js. For example if a path to rendered page resource is /content/mycompany/en/article.html then the path to client side js bundle would be /clientlib/content/mycompany/en/article/jsbundle.js (it should be possible to shorten /clientlib/content to just /content via Sling Resource Resolver). 
+
+The initialize code would of course depend on specific application logic and JS framework chosen to implement it. Bellow is an example using React.
+
+```javascript
+if (typeof document != "undefined") {
+	ReactDOM.render(<AppPage />, document.getElementById('appRoot'));
+}
+```
+
+### Option 2    
+
+Pre-compiled a JavaScript bundle using your favorate build tools (webpack, grunt), upload/deploy it to Sling repository and statically include it in server side generated markup to provide client side rendering.
 
 ## Simple Script Example
 
