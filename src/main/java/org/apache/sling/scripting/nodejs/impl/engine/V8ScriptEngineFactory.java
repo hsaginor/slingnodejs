@@ -32,10 +32,12 @@ import javax.script.ScriptEngineFactory;
 
 import org.apache.jackrabbit.api.observation.JackrabbitEventFilter;
 import org.apache.jackrabbit.api.observation.JackrabbitObservationManager;
+import org.apache.sling.api.request.SlingRequestListener;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
+import org.apache.sling.scripting.nodejs.impl.clientside.ScriptCollector;
 import org.apache.sling.scripting.nodejs.impl.objects.V8ObjectWrapper;
 import org.apache.sling.scripting.nodejs.impl.threadpool.ScriptExecutionPool;
 import org.osgi.framework.Constants;
@@ -84,8 +86,8 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
 		return new String[] { "."+EXTENSION };
     }
     
-    //@Reference
-    //private SlingRepository repository;
+    @Reference( target="(component.name=org.apache.sling.scripting.nodejs.impl.clientside.ScriptCollector)")
+    private SlingRequestListener scriptCollector;
     
     @Reference
     private ResourceResolverFactory resourceResolverFactory;
@@ -135,6 +137,10 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
 	public ScriptExecutionPool getScriptExecutionPool() {
 		return threadPool;
 	}
+	
+	ScriptCollector getScriptCollector() {
+		return (ScriptCollector) scriptCollector;
+	}
 
 	/**
      * Activate this component
@@ -167,9 +173,16 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     		if(!outDir.exists())
     			outDir.mkdir();
     		
+
+    		NodeBuilder builder = new NodeBuilder();
+    		builder.init(scriptsFolder);
+    		builder.executeBuild(scriptsFolder);
+    		
     		log.debug("Scripts directory {}. Pool size {}. java.library.path = {}", new Object[] {scriptsFolder.getAbsolutePath(), poolSize, System.getProperty("java.library.path")});
-    		scriptLoader = new ScriptLoader(scriptsFolder);
+    		scriptLoader = new ScriptLoader(scriptsFolder, builder);
     		scriptsUtil = NodeScriptsUtil.getNodeScriptsUtil();
+    		
+    		getScriptCollector().setNodeBuilder(builder, scriptsFolder);
     		
     		threadPool = new ScriptExecutionPool(poolSize);
     		engine = new V8ScriptEngine(this, threadPool);

@@ -18,11 +18,14 @@
  */
 package org.apache.sling.scripting.nodejs.impl.engine;
 
+import java.io.File;
 import java.io.Reader;
 
+import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptException;
 
+import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.nodejs.impl.threadpool.ScriptExecutionPool;
 import org.slf4j.Logger;
@@ -45,9 +48,14 @@ public class V8ScriptEngine extends AbstractSlingScriptEngine {
 	
 	@Override
 	public Object eval(Reader reader, ScriptContext context) throws ScriptException {
-        SlingScript script = new SlingScript(context, engineFactory.getScriptLoader());
+        SlingScript script = new SlingScript(context, engineFactory.getScriptLoader() /*, engineFactory.getScriptCollector() */);
         threadPool.exec(script);
-		
+		File scriptFile = script.getScriptFile();
+		if(scriptFile != null) {
+			Bindings bindings = context.getBindings(ScriptContext.ENGINE_SCOPE);
+	        SlingScriptHelper scriptHelper = (SlingScriptHelper) bindings.get("sling");
+			engineFactory.getScriptCollector().add(scriptHelper.getRequest(), scriptFile.getAbsolutePath());
+		}
 		return null;
 	}
 	

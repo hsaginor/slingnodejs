@@ -57,12 +57,9 @@ public class ScriptLoader {
 	private NodeBuilder builder;
 	private volatile boolean build = false; 
 	
-	ScriptLoader(File scriptsRootDir) {
+	ScriptLoader(File scriptsRootDir, NodeBuilder builder) {
 		this.scriptsRootDir = scriptsRootDir;
-		
-		builder = new NodeBuilder();
-		builder.executeInstall(scriptsRootDir);
-		builder.executeBuild(scriptsRootDir);
+		this.builder = builder;
 	}
 	
 	void setChangeListener(ScriptChangeListener changeListener) {
