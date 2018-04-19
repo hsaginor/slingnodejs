@@ -76,7 +76,7 @@
                     <slingUrl>http://localhost:8080</slingUrl>
                     <slingUrlSuffix>/libs/sling/install</slingUrlSuffix>
                     -->
-                    <usePut>true</usePut>
+                    <deploymentMethod>SlingPostServlet</deploymentMethod>
                     <user>admin</user>
                     <password>admin</password>
                 </configuration>

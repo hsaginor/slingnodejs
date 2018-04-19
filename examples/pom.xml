@@ -29,7 +29,7 @@
  	<packaging>pom</packaging>
  	
  	<modules>
- 		<module>view</module>
  		<module>model</module>
+ 		<module>view</module>
  	</modules>
  </project>
