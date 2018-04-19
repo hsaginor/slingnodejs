@@ -39,16 +39,19 @@ public class V8ScriptEngine extends AbstractSlingScriptEngine {
 	
 	private ScriptExecutionPool threadPool;
 	
-	protected V8ScriptEngine(V8ScriptEngineFactory scriptEngineFactory, ScriptExecutionPool threadPool) {
+	private ClassLoader dynamicClassLoader; 
+	
+	protected V8ScriptEngine(ClassLoader dynamicClassLoader, V8ScriptEngineFactory scriptEngineFactory, ScriptExecutionPool threadPool) {
 		super(scriptEngineFactory);
 		this.engineFactory = scriptEngineFactory;
 		this.threadPool = threadPool;
+		this.dynamicClassLoader = dynamicClassLoader;
 		engineFactory.getScriptLoader().setChangeListener(threadPool);
 	}
 	
 	@Override
 	public Object eval(Reader reader, ScriptContext context) throws ScriptException {
-        SlingScript script = new SlingScript(context, engineFactory.getScriptLoader() /*, engineFactory.getScriptCollector() */);
+        SlingScript script = new SlingScript(dynamicClassLoader, context, engineFactory.getScriptLoader() /*, engineFactory.getScriptCollector() */);
         threadPool.exec(script);
 		File scriptFile = script.getScriptFile();
 		if(scriptFile != null) {

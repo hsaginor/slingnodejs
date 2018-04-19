@@ -38,6 +38,7 @@ import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.nodejs.impl.clientside.ScriptCollector;
 import org.apache.sling.scripting.nodejs.impl.objects.ResourceIncluder;
+import org.apache.sling.scripting.nodejs.impl.objects.SlingLogger;
 import org.apache.sling.scripting.nodejs.impl.objects.V8ObjectWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,8 @@ public class SlingScript implements Releasable {
 	private File scriptFile;
 	private String output;
 	
+	private ClassLoader dynamicClassLoader;
+	
 	/**
 	 * Constructor called by Sling ScriptEngine to process a request.
 	 * 
@@ -80,9 +83,10 @@ public class SlingScript implements Releasable {
 	 * @param loader
 	 * @throws ScriptException 
 	 */
-	public SlingScript(ScriptContext context, ScriptLoader loader /*, ScriptCollector scriptCollector */) throws ScriptException {
+	public SlingScript(ClassLoader dynamicClassLoader, ScriptContext context, ScriptLoader loader /*, ScriptCollector scriptCollector */) throws ScriptException {
 		this.context = context;
 		this.loader = loader;
+		this.dynamicClassLoader = dynamicClassLoader;
 		// this.scriptCollector = scriptCollector;
 		init();
 	}
@@ -241,7 +245,9 @@ public class SlingScript implements Releasable {
 		Resource resource = request.getResource();
 		ResourceResolver resolver = resource.getResourceResolver();
 		Session jcrSession = resolver.adaptTo( Session.class );
+		SlingLogger logger = new SlingLogger();
 		
+		addObject(v8, SlingLogger.LOGGER_JS_NAME, logger);
 		addObject(v8, SlingBindings.SLING, scriptHelper);
 		addObject(v8, SlingBindings.REQUEST, request);
 		addObject(v8, SlingBindings.RESPONSE, response);
@@ -262,7 +268,7 @@ public class SlingScript implements Releasable {
 	}
 
 	private void addObject(V8 v8, String name, Object object) {
-		V8ObjectWrapper wrapper = new V8ObjectWrapper(v8, object, name);
+		V8ObjectWrapper wrapper = new V8ObjectWrapper(dynamicClassLoader, v8, object, name);
 		scriptableObjects.add(wrapper);
 	}
 	

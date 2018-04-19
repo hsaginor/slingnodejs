@@ -44,6 +44,10 @@
                     <excludes>
                     		<exclude>src/main/resources/**</exclude>
                         <exclude>src/test/resources/testscripts/**</exclude>
+                        <exclude>**/target/**</exclude>
+                        <exclude>**/.classpath</exclude>
+                        <exclude>**/.settings/**</exclude>
+                        <exclude>**/.project</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -85,9 +89,9 @@
 				<groupId>org.apache.sling</groupId>
 				<artifactId>maven-sling-plugin</artifactId>
 				<configuration>
-					<slingUrl>http://localhost:${sling.port}/libs/sling/install</slingUrl>
-					<!-- Alternatively: <slingUrl>http://localhost:8080</slingUrl> <slingUrlSuffix>/libs/sling/install</slingUrlSuffix> -->
-					<usePut>true</usePut>
+					<slingUrl>http://localhost:${sling.port}/apps/sling/install</slingUrl>
+					<!-- Alternatively: <slingUrl>http://localhost:8080</slingUrl> <slingUrlSuffix>/apps/sling/install</slingUrlSuffix> -->
+					<deploymentMethod>SlingPostServlet</deploymentMethod>
 					<user>admin</user>
 					<password>admin</password>
 				</configuration>
