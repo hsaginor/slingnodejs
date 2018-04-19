@@ -35,6 +35,8 @@ import org.apache.jackrabbit.api.observation.JackrabbitObservationManager;
 import org.apache.sling.api.request.SlingRequestListener;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.apache.sling.commons.classloader.DynamicClassLoader;
+import org.apache.sling.commons.classloader.DynamicClassLoaderManager;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
 import org.apache.sling.scripting.nodejs.impl.clientside.ScriptCollector;
@@ -91,6 +93,11 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     
     @Reference
     private ResourceResolverFactory resourceResolverFactory;
+    
+    @Reference
+    private DynamicClassLoaderManager dynamicClassLoaderManager;
+    
+    private ClassLoader dynamicClassLoader;
     
     private int poolSize = V8ScriptEngineConfiguration.DEFAULT_NODE_POOL_SIZE;
     
@@ -185,7 +192,8 @@ public class V8ScriptEngineFactory extends AbstractScriptEngineFactory {
     		getScriptCollector().setNodeBuilder(builder, scriptsFolder);
     		
     		threadPool = new ScriptExecutionPool(poolSize);
-    		engine = new V8ScriptEngine(this, threadPool);
+    		dynamicClassLoader = dynamicClassLoaderManager.getDynamicClassLoader();
+    		engine = new V8ScriptEngine(dynamicClassLoader, this, threadPool);
     		
     		long maxScriptObjects = config.maxScriptObjects();
     		if(maxScriptObjects > 0 && maxScriptObjects != V8ObjectWrapper.DEFAULT_MAX_CACHED_OBJECTS) {

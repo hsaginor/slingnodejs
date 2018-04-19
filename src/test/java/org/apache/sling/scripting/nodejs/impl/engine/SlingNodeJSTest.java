@@ -166,7 +166,7 @@ public class SlingNodeJSTest {
 	public void testLogger() {
 		V8 runtime = node.getRuntime();
 		SlingLogger logger = new SlingLogger();
-		V8ObjectWrapper logWrapper = new V8ObjectWrapper(runtime, logger, SlingLogger.LOGGER_JS_NAME);
+		V8ObjectWrapper logWrapper = new V8ObjectWrapper(this.getClass().getClassLoader(), runtime, logger, SlingLogger.LOGGER_JS_NAME);
 		logWrapper.release();
 		runtime.executeScript(SlingLogger.LOGGER_JS_NAME + ".log('log');");
 		runtime.executeScript(SlingLogger.LOGGER_JS_NAME + ".log('log', 'log');");

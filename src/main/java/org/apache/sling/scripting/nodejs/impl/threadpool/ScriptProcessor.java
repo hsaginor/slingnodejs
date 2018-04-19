@@ -36,7 +36,7 @@ public class ScriptProcessor extends Thread {
 	private static final Logger log = LoggerFactory.getLogger(ScriptProcessor.class);
 	
 	private NodeJS nodeJS;
-	private V8ObjectWrapper slingNodeLogger;
+	// private V8ObjectWrapper slingNodeLogger;
 	private Runnable target;
 	
 	private Queue<String> changedScripts = new ConcurrentLinkedQueue<String>();
@@ -89,7 +89,7 @@ public class ScriptProcessor extends Thread {
 		log.debug("Stopping V8ScriptEngine thread {}", getName());
 		NodeJS nodeJS = getNodeJS();
 		try {
-			slingNodeLogger.release();
+			// slingNodeLogger.release();
 			// printRuntimeObjects(nodeJS);
 			nodeJS.release();
 		} finally {
@@ -115,8 +115,6 @@ public class ScriptProcessor extends Thread {
 	private NodeJS getNodeJS() {
 		if(nodeJS == null) {
 			nodeJS = NodeJS.createNodeJS();
-			SlingLogger logger = new SlingLogger();
-			slingNodeLogger = new V8ObjectWrapper(nodeJS.getRuntime(), logger, SlingLogger.LOGGER_JS_NAME);
 		}
 		nodeJS.getRuntime().getLocker().acquire();
 		return nodeJS;

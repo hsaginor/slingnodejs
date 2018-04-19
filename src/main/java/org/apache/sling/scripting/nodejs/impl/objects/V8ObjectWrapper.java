@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sling.api.adapter.Adaptable;
+import org.apache.sling.commons.classloader.DynamicClassLoader;
 import org.apache.sling.scripting.nodejs.impl.exceptions.V8WrapperCallException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +54,7 @@ public class V8ObjectWrapper implements Releasable {
 	private String asName;
 	private Object callableObject;
 	private static long maxChachedObjects = DEFAULT_MAX_CACHED_OBJECTS;
+	private ClassLoader dynamicClassLoader;
 	
 	// V8 provides only a way to handle primitives.
 	// The ThreadLocal objectsCache is used to store and access wrapped objects when references are passed back from
@@ -66,12 +69,13 @@ public class V8ObjectWrapper implements Releasable {
 	 * @param callableObject - the Java Object to be registered as an object in V8 environment. 
 	 * @param asName - name the object will be registered as in V8 runtime
 	 */
-	public V8ObjectWrapper(V8 runtime, Object callableObject, String asName) {
+	public V8ObjectWrapper(ClassLoader dynamicClassLoader, V8 runtime, Object callableObject, String asName) {
 		
-		if(callableObject == null || asName == null || asName.trim().length()==0) {
+		if(callableObject == null || dynamicClassLoader == null || asName == null || asName.trim().length()==0) {
 			throw new IllegalArgumentException();
 		}
 		
+		this.dynamicClassLoader = dynamicClassLoader;
 		this.runtime = runtime;
 		this.callableObject = callableObject;
 		this.asName = asName.trim();
@@ -87,13 +91,14 @@ public class V8ObjectWrapper implements Releasable {
 	 * @param runtime
 	 * @param callableObject
 	 */
-	private V8ObjectWrapper(V8 runtime, Object callableObject) {
+	private V8ObjectWrapper(ClassLoader dynamicClassLoader, V8 runtime, Object callableObject) {
 		// super(runtime, callableObject);
 		
-		if(callableObject == null) {
+		if(callableObject == null || dynamicClassLoader == null) {
 			throw new IllegalArgumentException();
 		}
 		
+		this.dynamicClassLoader = dynamicClassLoader;
 		this.runtime = runtime;
 		this.callableObject = callableObject;
 		register = new V8Object(runtime);
@@ -209,7 +214,7 @@ public class V8ObjectWrapper implements Releasable {
         }
         
         log.debug("Wrapping method return result of type {}", result.getClass().getName());
-        V8ObjectWrapper wrapper = new V8ObjectWrapper(runtime, result);
+        V8ObjectWrapper wrapper = new V8ObjectWrapper(dynamicClassLoader, runtime, result);
         this.cacheKeys.add(wrapper.self());
         return wrapper.register.twin();
     }
@@ -255,6 +260,26 @@ public class V8ObjectWrapper implements Releasable {
 			
 			try {
 				methodArgs = getArgs(parameters);
+
+				// Special case for handling adapTo calls.
+				// V8 scripts must pass class name as string.
+				if((callableObject instanceof Adaptable) && "adaptTo".equals(name)) {
+					Object o = methodArgs[0];
+					
+					if(o instanceof String) {
+						String className = (String) o;
+						try {
+							Class clazz = dynamicClassLoader.loadClass(className);
+							Object adapted = ((Adaptable) callableObject).adaptTo(clazz);
+							return getReturnResult(adapted);
+						} catch (ClassNotFoundException e) {
+							log.error("Attempt to adaptTo {} to {} failed.", new String[] {callableObject.getClass().getName(), className}, e);
+							return null;
+						}
+					}
+		
+				}
+				
 				Method method = getMethod(methods, methodArgs);
 				if(method == null) {
 					String msg = "Unable to invoke " + callableObject.getClass().getName() + "." + name + ". Parameter list does not match.";
@@ -273,6 +298,7 @@ public class V8ObjectWrapper implements Releasable {
 					throw new V8WrapperCallException(msg, e);
 				} 
 			} finally {
+				// Must release arguments to free J2V8 memory. 
 				if(methodArgs != null) {
 					releaseArgs(methodArgs);
 				}

@@ -44,6 +44,10 @@
                     <excludes>
                     		<exclude>src/main/resources/**</exclude>
                         <exclude>src/test/resources/testscripts/**</exclude>
+                        <exclude>**/target/**</exclude>
+                        <exclude>**/.classpath</exclude>
+                        <exclude>**/.settings/**</exclude>
+                        <exclude>**/.project</exclude>
                     </excludes>
                 </configuration>
             </plugin>
