@@ -21,15 +21,10 @@ import TodoItem from './TodoItem';
 import TodoInput from './TodoInput';
 
 class TodoList extends React.Component {
-    constructor() {
+    constructor(props) {
         super();
-        // TODO: hardcoded items for now
         this.state = {
-            items: [
-                {name: "Item 1", done: false, itemKey: "1"},
-                {name: "Item 2", done: true, itemKey: "2"},
-                {name: "Item 3", done: false, itemKey: "3"}
-            ]
+            items: props.items
         };
         this.handleAddItem = this.handleAddItem.bind(this);
         this.handleToggle = this.handleToggle.bind(this);
@@ -79,7 +74,9 @@ class TodoList extends React.Component {
             }}
         ).then((response) => response.json())
         .then(result => {
-            // alert(result);
+            this.setState({
+              items: result.items
+            });
         },
         error => {
             // alert(error);

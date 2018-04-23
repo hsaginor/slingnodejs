@@ -56,4 +56,13 @@ public class TodoItem {
 		return name;
 	}
 	
+	@Named("itemKey")
+	public String getItemKey() {
+		return resource.getName();
+	}
+	
+	@Named("path")
+	public String getPath() {
+		return resource.getPath();
+	}
 }
