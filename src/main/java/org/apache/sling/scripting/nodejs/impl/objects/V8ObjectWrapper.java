@@ -416,7 +416,7 @@ public class V8ObjectWrapper implements Releasable {
 				Class type = types[i];
 				Object arg = methodArgs[i];
 				
-				if(!type.isInstance(arg)) {
+				if(!type.isInstance(arg) && !isPrimitiveAssignableFrom(type, arg)) {
 					match = false;
 				}
 			}
@@ -425,6 +425,49 @@ public class V8ObjectWrapper implements Releasable {
 		}
 		
 		return match;
+	}
+	
+	/**
+	 * 
+	 * J2V8 passes primitive arguments as Java object types. 
+	 * There is no Java Reflection way to to check if true method arguments types are assignable from those via java unboxing.  
+	 * There might be a better way.
+	 */
+	private boolean isPrimitiveAssignableFrom(Class type, Object arg) {
+		
+		if((arg instanceof Integer) && type.getName().equals("int")) {
+			return true;
+		}
+		
+		if((arg instanceof Float) && type.getName().equals("float")) {
+			return true;
+		}
+		
+		if((arg instanceof Double) && type.getName().equals("double")) {
+			return true;
+		}
+		
+		if((arg instanceof Boolean) && type.getName().equals("boolean")) {
+			return true;
+		}
+		
+		if((arg instanceof Short) && type.getName().equals("short")) {
+			return true;
+		}
+		
+		if((arg instanceof Long) && type.getName().equals("long")) {
+			return true;
+		}
+		
+		if((arg instanceof java.lang.Character) && type.getName().equals("char")) {
+			return true;
+		}
+		
+		if((arg instanceof Byte) && type.getName().equals("byte")) {
+			return true;
+		}
+		
+		return true;
 	}
 
 }
