@@ -21,16 +21,12 @@ import TodoItem from './TodoItem';
 import TodoInput from './TodoInput';
 
 class TodoList extends React.Component {
-    constructor() {
+    constructor(props) {
         super();
-        // TODO: hardcoded items for now
         this.state = {
-            items: [
-                {name: "Item 1", done: false, itemKey: "1"},
-                {name: "Item 2", done: true, itemKey: "2"},
-                {name: "Item 3", done: false, itemKey: "3"}
-            ]
+            items: props.items
         };
+        this.apiPath = props.apiPath;
         this.handleAddItem = this.handleAddItem.bind(this);
         this.handleToggle = this.handleToggle.bind(this);
     }
@@ -66,11 +62,16 @@ class TodoList extends React.Component {
         );
 	}
 
-    componentDidMount() {
-        this.apiPath = document.getElementById('TodoAppRoot').attributes['data-resource-path'].value;
-        this.getapiPath = this.apiPath + ".model.json"
-        fetch(this.getapiPath, {
-            // Does the request work without this?  In Author?  In Publish?
+    //componentDidMount() {
+    //    if (typeof document != "undefined") {
+    //    		this.apiPath = document.getElementById('TodoAppRoot').attributes['data-resource-path'].value;
+    //    		this.getapiPath = this.apiPath + ".model.json"
+    //    		this.updateTodoList();
+    //    	}
+    //}
+    
+    updateTodoList() {
+    		fetch(this.getapiPath, {
             credentials: "same-origin",
             method: 'GET',
             headers: {
@@ -79,7 +80,9 @@ class TodoList extends React.Component {
             }}
         ).then((response) => response.json())
         .then(result => {
-            // alert(result);
+            this.setState({
+              items: result.items
+            });
         },
         error => {
             // alert(error);

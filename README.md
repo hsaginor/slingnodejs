@@ -61,7 +61,17 @@ Place files *.babelrc* and *package.json* at the root of Sling JCR repository.
 After installing the OSGi bundles go to Felix Console and navigate to OSGi -> Bundles. Verify that org.apache.sling.scripting.nodejs bundles is active.
 
 You should also see a new menu item in Felix Console named Sling NodeJS. Navigate to Sling NodeJS -> Sling NodeJS Version. Verify node version. If you installed J2V8 bundle from this project (Installation Instruction above) node version should be 7.4.0.
-   
+
+## Install Demo Example
+
+To install a demo application cd into examples folder and run  ``` mvn clean install -PautoInstallBundle -Dsling.port=<port> ```. The  -Dsling.port=<port> is optional if you have Sling running on the default port 8000.
+
+To access the demo application point your browser to http://localhost:port/content/todo.html. 
+Try to add a new item. Try to click on each item.
+Note that if you refresh the page it will reload the initial items. Your changes are not persisted to the repository. This functionality is not implemented yet.
+
+**The first time you open the demo page client side JavaScript may not load. Try to refresh. This is a bug - client side JavaScript bundle has not compiled yet.**
+
 ## Server Side Rendering Objects
 
 The following variables are available to scripts for server side rendering.
