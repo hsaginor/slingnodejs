@@ -25,9 +25,9 @@ import TodoApp from '../react-components/TodoApp';
 
 class TodoPage extends React.Component {
 
+	// server side rendering
     renderServerResponse() {
         const path = resource.getPath();
-        log.debug("Adapting resource {}", path);
         const model = resource.adaptTo("org.apache.sling.nodejs.examples.models.todo.TodoList");
         const title = model.getTitle();
 		const items = this.getItems(model);
@@ -47,6 +47,28 @@ class TodoPage extends React.Component {
             </html>
         	)
         );
+    }
+    
+    // client side rendering
+    renderClientSide() {
+    		const apiPath = document.getElementById('TodoAppRoot').attributes['data-resource-path'].value;
+        const getapiPath = apiPath + ".model.json"
+    		fetch(getapiPath, {
+            credentials: "same-origin",
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }}
+        ).then((response) => response.json())
+        .then(result => {
+        		const title = result.title;
+        		const items = result.items;
+            ReactDOM.hydrate(<TodoApp title={title} items={items} apiPath={apiPath}/>, document.getElementById('TodoAppRoot'));
+        },
+        error => {
+            // alert(error);
+        });
     }
 
     getItems(model) {
@@ -68,10 +90,10 @@ class TodoPage extends React.Component {
     }
 }
 
-export default new TodoPage();
+const page = new TodoPage();
+export default page;
 
+// client side rendering
 if (typeof document != "undefined") {
-	const title = document.getElementsByClassName("App-title")[0].innerHTML;
-	const items = [];
-	ReactDOM.hydrate(<TodoApp title={title} items={items}/>, document.getElementById('TodoAppRoot'));
+	page.renderClientSide();
 }

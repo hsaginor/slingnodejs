@@ -26,6 +26,7 @@ class TodoList extends React.Component {
         this.state = {
             items: props.items
         };
+        this.apiPath = props.apiPath;
         this.handleAddItem = this.handleAddItem.bind(this);
         this.handleToggle = this.handleToggle.bind(this);
     }
@@ -61,11 +62,16 @@ class TodoList extends React.Component {
         );
 	}
 
-    componentDidMount() {
-        this.apiPath = document.getElementById('TodoAppRoot').attributes['data-resource-path'].value;
-        this.getapiPath = this.apiPath + ".model.json"
-        fetch(this.getapiPath, {
-            // Does the request work without this?  In Author?  In Publish?
+    //componentDidMount() {
+    //    if (typeof document != "undefined") {
+    //    		this.apiPath = document.getElementById('TodoAppRoot').attributes['data-resource-path'].value;
+    //    		this.getapiPath = this.apiPath + ".model.json"
+    //    		this.updateTodoList();
+    //    	}
+    //}
+    
+    updateTodoList() {
+    		fetch(this.getapiPath, {
             credentials: "same-origin",
             method: 'GET',
             headers: {
