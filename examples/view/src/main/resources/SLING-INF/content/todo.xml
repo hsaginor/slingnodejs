@@ -29,57 +29,7 @@
     <property>
         <name>jcr:title</name>
         <type>String</type>
-        <value>My Todo List</value>
+        <value>Todo List</value>
     </property>
-    
-    <node>
-    		<name>items</name>
-    		<primaryNodeType>sling:OrderedFolder</primaryNodeType>
-    		
-    		<node>
-    			<name>item</name>
-    			<primaryNodeType>nt:unstructured</primaryNodeType>
-    			<property>
-    				<name>done</name>
-    				<type>Boolean</type>
-    				<value>false</value>
-    			</property>
-    			<property>
-    				<name>name</name>
-    				<type>String</type>
-    				<value>Item 1</value>
-    			</property>
-    		</node>
-    		
-    		<node>
-    			<name>item2</name>
-    			<primaryNodeType>nt:unstructured</primaryNodeType>
-    			<property>
-    				<name>done</name>
-    				<type>Boolean</type>
-    				<value>true</value>
-    			</property>
-    			<property>
-    				<name>name</name>
-    				<type>String</type>
-    				<value>Item 2</value>
-    			</property>
-    		</node>
-    		
-    		<node>
-    			<name>item3</name>
-    			<primaryNodeType>nt:unstructured</primaryNodeType>
-    			<property>
-    				<name>done</name>
-    				<type>Boolean</type>
-    				<value>false</value>
-    			</property>
-    			<property>
-    				<name>name</name>
-    				<type>String</type>
-    				<value>Item 3</value>
-    			</property>
-    		</node>
-    </node>
     
 </node>

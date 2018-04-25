@@ -42,6 +42,7 @@
                     <bnd><![CDATA[
 Sling-Initial-Content: \
   SLING-INF/scripts;overwrite:=true;uninstall:=true;path:=/apps,\
+  SLING-INF/etc;overwrite:=true;uninstall:=true;path:=/etc,\
   SLING-INF/content;overwrite:=true;uninstall:=true;path:=/content
                     ]]></bnd>
                 </configuration>
