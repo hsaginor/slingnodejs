@@ -30,6 +30,7 @@ class Header extends React.Component {
 	render() {
 		return (
 			<header className="App-header">
+			<img src="/etc/todo/img/logo.svg" className="App-logo" alt="logo" />
             <h1 className="App-title">{this.state.title}</h1>
         	</header>
         	);

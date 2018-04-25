@@ -36,7 +36,8 @@ class TodoPage extends React.Component {
             (
             <html>
             	<head>
-					<title>My Title - {title}</title>
+					<title>{title}</title>
+					<link rel="stylesheet" type="text/css" href="/etc/todo/css/app.css" />
             	</head>
             	<body>
                 <div id="TodoAppRoot" data-resource-path={path}>

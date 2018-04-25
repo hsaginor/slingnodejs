@@ -34,16 +34,17 @@ class TodoList extends React.Component {
     handleAddItem(name) {
         const newName = name.trim();
         if(newName.length > 0) {
-            const itemKey = "" + (this.state.items.length+1);
-            const newItems = this.state.items.concat({ name: newName, done: false, itemKey: itemKey});
-            this.setState({ items: newItems });
+            const itemKey = "item" + (this.state.items.length+1);
+            const item = { name: newName, done: false, itemKey: itemKey }
+            this.postItem(item, response => { this.setState({ items: this.state.items.concat(item) }); });
         }
     }
     
     handleToggle(item) {
         const newItems = this.state.items.slice();
-        newItems[newItems.indexOf(item)].done = !item.done;
-        this.setState({ items: newItems });
+        const toggledItem = newItems[this.state.items.indexOf(item)];
+        toggledItem.done = !toggledItem.done;
+        this.postItem(toggledItem, response => { this.setState({ items: newItems }); });
     }
 
 	render() {
@@ -61,31 +62,28 @@ class TodoList extends React.Component {
             </div>
         );
 	}
-
-    //componentDidMount() {
-    //    if (typeof document != "undefined") {
-    //    		this.apiPath = document.getElementById('TodoAppRoot').attributes['data-resource-path'].value;
-    //    		this.getapiPath = this.apiPath + ".model.json"
-    //    		this.updateTodoList();
-    //    	}
-    //}
     
-    updateTodoList() {
-    		fetch(this.getapiPath, {
-            credentials: "same-origin",
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }}
-        ).then((response) => response.json())
-        .then(result => {
-            this.setState({
-              items: result.items
-            });
-        },
-        error => {
-            // alert(error);
+    postItem(item, onSuccess, onError) {
+    		const postUrl = this.apiPath + "/items/" + item.itemKey;
+    		
+    		fetch(postUrl, {
+        		credentials: "same-origin",
+        		method: 'POST',
+        		headers: {
+                'Accept': 'application/json, text/plain, text/html',
+  				'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+        		},
+        		body: 'jcr:primaryType=nt:unstructured&name='+item.name+'&done='+item.done+'&done@TypeHint=boolean',
+        }).then(response => {
+        		if(response.ok) {
+        			onSuccess(response);
+        		} else {
+        			alert("Unable to save item '" + item.name + "': " + response.statusText);
+        			console.error("Unable to save item '" + item.name + "': Response " + response.status);
+        		}      	
+        }).catch(err => {
+        		alert("Unable to save item '" + item.name + "':" + err);
+        		console.error(err);
         });
     }
 }

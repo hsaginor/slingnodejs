@@ -23,7 +23,7 @@ import TodoList from './TodoList';
 class TodoApp extends React.Component {
 	render() {
     	return (
-            <div>
+            <div className="App">
             <Header title={this.props.title} />
             	<p className="App-intro">To add item, type in item name and click Add.</p>
         		<TodoList items={this.props.items} apiPath={this.props.apiPath}/>
