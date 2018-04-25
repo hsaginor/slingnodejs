@@ -18,6 +18,7 @@
  */
 package org.apache.sling.nodejs.examples.models.todo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -45,8 +46,7 @@ public class TodoList {
 	
 	@Self
 	private Resource resource;
-	
-	@Named("items")
+
 	@ChildResource
 	private List<TodoItem> items;
 	
@@ -64,7 +64,11 @@ public class TodoList {
 		return title;
 	}
 
+	@Named("items")
 	public List<TodoItem> getItems() {
+		if(items == null) {
+			return new ArrayList<TodoItem>();
+		}
 		return items;
 	}
 
