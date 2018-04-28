@@ -71,8 +71,6 @@ Try to add a new item. Try to click on each item.
 
 If you are trying this out on AEM author then go to Apache Felix Components page (http://localhost:4502/system/console/components) and disable CSRFFilter. Otherwise you will get an error. The demo application does not handle AEM CSRF token (sorry). 
 
-**The first time you open the demo page client side JavaScript may not load. Try to refresh. This is a bug - client side JavaScript bundle has not compiled yet.**
-
 ## Server Side Rendering Objects
 
 The following variables are available to scripts for server side rendering.
@@ -132,7 +130,7 @@ The initialize code would of course depend on specific application logic and JS 
 
 ```javascript
 if (typeof document != "undefined") {
-	ReactDOM.render(<AppPage />, document.getElementById('appRoot'));
+	ReactDOM.hydrate(<AppPage />, document.getElementById('appRoot'));
 }
 ```
 
