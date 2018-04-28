@@ -80,11 +80,28 @@ public class ScriptCollector implements SlingRequestListener {
 					String req = request.getServletPath();
 					log.debug("{} Computed collected files hash {} in {} milliseconds.", new Object[] {req, hash, time});
 					
-					String bundleFilePath = getBundleFilePath(request.getServletPath(),  hash);
+					String servletPath = request.getServletPath();
+					
+					// Create a temp file while bundle is compiling to handle a race condition when client side JS is requested 
+					// before it's done compiling.
+					String tempFilePath = getBundleFilePath(servletPath,  "temp");
+					File tempFile = new File(tempFilePath);
+					tempFile.createNewFile();
+					
+					String bundleFilePath = getBundleFilePath(servletPath,  hash);
 					log.debug("Computed bundle file path {}", bundleFilePath);
 					
-					if(builder != null && buildDir != null) 
-						builder.browserfy(buildDir, scripts, bundleFilePath);
+					try {
+						if(builder != null && buildDir != null) {
+							builder.browserfy(buildDir, scripts, bundleFilePath);
+							log.debug("Compiled client bundle {}", bundleFilePath);
+						}
+					} finally {
+						// Delete temp file 
+						if(tempFile.exists()) {
+							tempFile.delete();
+						}
+					}
 				}
 			} catch (Exception e) {
 				log.error("Unable to compute hash.");
@@ -123,25 +140,50 @@ public class ScriptCollector implements SlingRequestListener {
 		File dir = new File(dirPath);
 		if(dir.exists() && dir.isDirectory()) {
 			String name = resource.getName() + NodeBuilder.BUNDLE_FILE_SELECTOR;
-			File foundFiles[] = dir.listFiles(new FileFilter() {
-				@Override
-				public boolean accept(File pathname) {
-					// TODO Auto-generated method stub
-					return pathname.getName().startsWith(name);
-				}
-			});
+			file = _findCompiledBundle(dir, name);
 			
-			if(foundFiles.length > 0) {
-				File bundleFile = foundFiles[0];
-				if(bundleFile.exists() && bundleFile.isFile()) {
-					file = bundleFile;
-				}
+			// Client side bundle may not have compiled yet.
+			// We are going to retry several times.
+			String tempNamePrefix = name + "temp";
+			int retryCount = 0;
+			while(file != null && file.getName().startsWith(tempNamePrefix) && retryCount < 30) {
+				// Client side bundle may not have compiled yet
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {}
+				
+				retryCount++;
+				log.debug("{} is a temp file. Retry {} ...", new Object[] {file.getName(), retryCount});
+				file = _findCompiledBundle(dir, name);
+		
 			}
 		} else {
 			log.warn("Directory {} doesn't exist.", dirPath);
 		}
 		
+		if (file == null) {
+			log.debug("Unable to find compiled client bundle for {} does not exist.", resource.getPath());
+		}
 		return file;
+	}
+	
+	private File _findCompiledBundle(File dir, String name) {
+		File foundFiles[] = dir.listFiles(new FileFilter() {
+			@Override
+			public boolean accept(File pathname) {
+				return pathname.getName().startsWith(name);
+			}
+		});
+		
+		if(foundFiles.length > 0) {
+			File file = foundFiles[0];
+			if(file.exists() && file.isFile()) {
+				log.debug("Found bundle file {}", file.getAbsolutePath());
+				return file;
+			}
+		} 
+		
+		return null;
 	}
 	
 	private void log(ServletRequest request) {
